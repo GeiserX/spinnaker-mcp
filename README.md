@@ -8,7 +8,7 @@
   <a href="https://www.npmjs.com/package/spinnaker-mcp"><img src="https://img.shields.io/npm/v/spinnaker-mcp?style=flat-square&logo=npm" alt="npm"/></a>
   <a href="https://github.com/GeiserX/spinnaker-mcp/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/GeiserX/spinnaker-mcp/ci.yml?style=flat-square&logo=github&label=CI" alt="CI"/></a>
   <a href="https://codecov.io/gh/GeiserX/spinnaker-mcp"><img src="https://img.shields.io/codecov/c/github/GeiserX/spinnaker-mcp?style=flat-square&logo=codecov&label=Coverage" alt="Coverage"/></a>
-  <img src="https://img.shields.io/badge/Go-1.24-blue?style=flat-square&logo=go&logoColor=white" alt="Go"/>
+  <img src="https://img.shields.io/badge/Go-1.25-blue?style=flat-square&logo=go&logoColor=white" alt="Go"/>
   <a href="https://hub.docker.com/r/drumsergio/spinnaker-mcp"><img src="https://img.shields.io/docker/pulls/drumsergio/spinnaker-mcp?style=flat-square&logo=docker" alt="Docker Pulls"/></a>
   <a href="https://github.com/GeiserX/spinnaker-mcp/stargazers"><img src="https://img.shields.io/github/stars/GeiserX/spinnaker-mcp?style=flat-square&logo=github" alt="GitHub Stars"/></a>
   <a href="https://github.com/GeiserX/spinnaker-mcp/blob/main/LICENSE"><img src="https://img.shields.io/github/license/GeiserX/spinnaker-mcp?style=flat-square" alt="License"/></a>

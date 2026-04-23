@@ -24,7 +24,7 @@ func NewPauseExecution(gate *client.GateClient) (mcp.Tool, server.ToolHandlerFun
 			return mcp.NewToolResultError(err.Error()), nil
 		}
 
-		resp, err := gate.PauseExecution(id)
+		resp, err := gate.PauseExecution(ctx, id)
 		if err != nil {
 			return mcp.NewToolResultError(err.Error()), nil
 		}

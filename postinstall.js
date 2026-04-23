@@ -5,7 +5,6 @@ const { execSync } = require("child_process");
 const fs = require("fs");
 const path = require("path");
 const https = require("https");
-const http = require("http");
 
 const VERSION = require("./package.json").version;
 const REPO = "GeiserX/spinnaker-mcp";
@@ -36,12 +35,18 @@ function getAssetName() {
   return `spinnaker-mcp_${VERSION}_${platform}_${arch}.${ext}`;
 }
 
-function downloadFile(url) {
+function downloadFile(url, maxRedirects) {
+  if (maxRedirects === undefined) maxRedirects = 5;
+  if (maxRedirects <= 0) {
+    return Promise.reject(new Error("Too many redirects"));
+  }
+  if (!url.startsWith("https://")) {
+    return Promise.reject(new Error("Refusing non-HTTPS download URL: " + url));
+  }
   return new Promise((resolve, reject) => {
-    const get = url.startsWith("https") ? https.get : http.get;
-    get(url, (res) => {
+    https.get(url, (res) => {
       if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
-        return downloadFile(res.headers.location).then(resolve, reject);
+        return downloadFile(res.headers.location, maxRedirects - 1).then(resolve, reject);
       }
       if (res.statusCode !== 200) {
         return reject(new Error(`Download failed: HTTP ${res.statusCode}`));

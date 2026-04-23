@@ -17,11 +17,14 @@ func main() {
 	log.Printf("Spinnaker MCP %s starting…", version.String())
 
 	cfg := config.LoadGateConfig()
-	gate := client.NewGate(cfg.BaseURL, cfg.Token, cfg.User, cfg.Pass, cfg.CertFile, cfg.KeyFile, cfg.Insecure)
+	gate, err := client.NewGate(cfg.BaseURL, cfg.Token, cfg.User, cfg.Pass, cfg.CertFile, cfg.KeyFile, cfg.Insecure)
+	if err != nil {
+		log.Fatalf("Failed to create Gate client: %v", err)
+	}
 
 	s := server.NewMCPServer(
 		"Spinnaker MCP",
-		"0.0.1",
+		version.Version,
 		server.WithToolCapabilities(true),
 		server.WithRecovery(),
 	)
@@ -78,9 +81,13 @@ func main() {
 			log.Fatalf("stdio server error: %v", err)
 		}
 	} else {
+		port := os.Getenv("MCP_PORT")
+		if port == "" {
+			port = "8085"
+		}
 		httpSrv := server.NewStreamableHTTPServer(s)
-		log.Println("Spinnaker MCP listening on :8084")
-		if err := httpSrv.Start(":8084"); err != nil {
+		log.Printf("Spinnaker MCP listening on :%s", port)
+		if err := httpSrv.Start(":" + port); err != nil {
 			log.Fatalf("server error: %v", err)
 		}
 	}

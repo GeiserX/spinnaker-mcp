@@ -24,7 +24,7 @@ func NewGetExecution(gate *client.GateClient) (mcp.Tool, server.ToolHandlerFunc)
 			return mcp.NewToolResultError(err.Error()), nil
 		}
 
-		resp, err := gate.GetExecution(id)
+		resp, err := gate.GetExecution(ctx, id)
 		if err != nil {
 			return mcp.NewToolResultError(err.Error()), nil
 		}

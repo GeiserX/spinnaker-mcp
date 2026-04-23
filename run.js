@@ -16,7 +16,7 @@ if (!fs.existsSync(BIN_PATH)) {
 const env = Object.assign({}, process.env, { TRANSPORT: "stdio" });
 
 try {
-  execFileSync(BIN_PATH, [], { env, stdio: "inherit" });
+  execFileSync(BIN_PATH, process.argv.slice(2), { env, stdio: "inherit" });
 } catch (err) {
   process.exit(err.status || 1);
 }

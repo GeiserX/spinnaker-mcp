@@ -24,7 +24,7 @@ func NewListLoadBalancers(gate *client.GateClient) (mcp.Tool, server.ToolHandler
 			return mcp.NewToolResultError(err.Error()), nil
 		}
 
-		resp, err := gate.ListLoadBalancers(app)
+		resp, err := gate.ListLoadBalancers(ctx, app)
 		if err != nil {
 			return mcp.NewToolResultError(err.Error()), nil
 		}

@@ -43,7 +43,7 @@ func NewTriggerPipeline(gate *client.GateClient) (mcp.Tool, server.ToolHandlerFu
 			}
 		}
 
-		resp, err := gate.TriggerPipeline(app, name, params)
+		resp, err := gate.TriggerPipeline(ctx, app, name, params)
 		if err != nil {
 			return mcp.NewToolResultError(err.Error()), nil
 		}

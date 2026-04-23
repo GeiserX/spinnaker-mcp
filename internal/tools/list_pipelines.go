@@ -24,7 +24,7 @@ func NewListPipelines(gate *client.GateClient) (mcp.Tool, server.ToolHandlerFunc
 			return mcp.NewToolResultError(err.Error()), nil
 		}
 
-		resp, err := gate.ListPipelines(app)
+		resp, err := gate.ListPipelines(ctx, app)
 		if err != nil {
 			return mcp.NewToolResultError(err.Error()), nil
 		}

@@ -24,7 +24,7 @@ func NewResumeExecution(gate *client.GateClient) (mcp.Tool, server.ToolHandlerFu
 			return mcp.NewToolResultError(err.Error()), nil
 		}
 
-		resp, err := gate.ResumeExecution(id)
+		resp, err := gate.ResumeExecution(ctx, id)
 		if err != nil {
 			return mcp.NewToolResultError(err.Error()), nil
 		}
