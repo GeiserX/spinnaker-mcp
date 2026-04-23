@@ -1,7 +1,7 @@
 # ───────────────────────────────────────────────
 # Stage 1 – build the Go binary
 # ───────────────────────────────────────────────
-FROM golang:1.24 AS builder
+FROM golang:1.26 AS builder
 LABEL maintainer="9169332+GeiserX@users.noreply.github.com"
 
 WORKDIR /src
