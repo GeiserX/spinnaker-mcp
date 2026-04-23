@@ -6,12 +6,12 @@
     "url": "https://github.com/GeiserX/spinnaker-mcp",
     "source": "github"
   },
-  "version": "0.3.0",
+  "version": "0.3.1",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "spinnaker-mcp",
-      "version": "0.3.0",
+      "version": "0.3.1",
       "transport": {
         "type": "stdio"
       },
@@ -48,7 +48,7 @@
     },
     {
       "registryType": "oci",
-      "identifier": "drumsergio/spinnaker-mcp:v0.3.0",
+      "identifier": "drumsergio/spinnaker-mcp:v0.3.1",
       "transport": {
         "type": "stdio"
       },
