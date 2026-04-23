@@ -1,0 +1,9 @@
+description: "MCP Server for Spinnaker written in Go. Bridges any Spinnaker instance via the Gate API, enabling LLMs to manage applications, trigger pipelines, and monitor deployments."
+personalNote: "Built because the existing Spinnaker MCP implementations were essentially non-functional. This one uses the real MCP protocol with stdio transport and supports multiple auth methods."
+dockerImage: "drumsergio/spinnaker-mcp"
+keyFeatures:
+  - "13 MCP tools covering applications, pipelines, executions, and infrastructure"
+  - "Multiple auth methods: bearer token, basic auth, x509 client certificates"
+  - "Stdio and Streamable HTTP transports"
+  - "Docker and npm distribution"
+techStack: "Go, MCP, Docker"

@@ -1,0 +1,86 @@
+project_name: spinnaker-mcp
+release:
+  github:
+    owner: GeiserX
+    name: spinnaker-mcp
+  draft: false
+  prerelease: auto
+
+builds:
+  - id: bin
+    main: ./cmd/server
+    goos: [linux, windows, darwin]
+    goarch: [amd64, arm64]
+    ldflags:
+      - -s -w
+      - -X github.com/geiserx/spinnaker-mcp/version.Version={{ .Version }}
+      - -X github.com/geiserx/spinnaker-mcp/version.Commit={{ .ShortCommit }}
+      - -X github.com/geiserx/spinnaker-mcp/version.Date={{ .Date }}
+
+archives:
+  - id: dist
+    builds: [bin]
+    format_overrides:
+      - goos: windows
+        format: zip
+
+checksum:
+  name_template: 'checksums.txt'
+
+dockers:
+  - image_templates:
+      - "drumsergio/spinnaker-mcp:{{ .Tag }}-amd64"
+      - "drumsergio/spinnaker-mcp:latest-amd64"
+    dockerfile: Dockerfile
+    goos:   linux
+    goarch: amd64
+    use:    buildx
+    extra_files:
+      - go.mod
+      - go.sum
+      - cmd/
+      - internal/
+      - client/
+      - config/
+      - version/
+      - .goreleaser.yaml
+    build_flag_templates:
+      - "--platform=linux/amd64"
+  - image_templates:
+      - "drumsergio/spinnaker-mcp:{{ .Tag }}-arm64"
+      - "drumsergio/spinnaker-mcp:latest-arm64"
+    dockerfile: Dockerfile
+    goos:   linux
+    goarch: arm64
+    use:    buildx
+    extra_files:
+      - go.mod
+      - go.sum
+      - cmd/
+      - internal/
+      - client/
+      - config/
+      - version/
+      - .goreleaser.yaml
+    build_flag_templates:
+      - "--platform=linux/arm64"
+
+docker_manifests:
+  - name_template: 'drumsergio/spinnaker-mcp:{{ .Tag }}'
+    image_templates:
+      - 'drumsergio/spinnaker-mcp:{{ .Tag }}-amd64'
+      - 'drumsergio/spinnaker-mcp:{{ .Tag }}-arm64'
+  - name_template: 'drumsergio/spinnaker-mcp:latest'
+    image_templates:
+      - 'drumsergio/spinnaker-mcp:latest-amd64'
+      - 'drumsergio/spinnaker-mcp:latest-arm64'
+
+snapshot:
+  name_template: "snapshot-{{ .ShortCommit }}"
+
+changelog:
+  groups:
+    - title: "Features"
+      regexp: '^feat'
+    - title: "Fixes"
+      regexp: '^fix'

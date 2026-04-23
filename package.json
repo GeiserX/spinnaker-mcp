@@ -1,0 +1,34 @@
+{
+  "name": "spinnaker-mcp",
+  "mcpName": "io.github.GeiserX/spinnaker-mcp",
+  "version": "0.1.0",
+  "description": "MCP server that bridges any Spinnaker instance via its Gate API, exposing application management, pipeline operations, and deployment infrastructure over JSON-RPC",
+  "license": "GPL-3.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/GeiserX/spinnaker-mcp.git"
+  },
+  "homepage": "https://github.com/GeiserX/spinnaker-mcp",
+  "author": "GeiserX",
+  "keywords": [
+    "mcp",
+    "spinnaker",
+    "continuous-delivery",
+    "pipeline",
+    "deployment",
+    "model-context-protocol"
+  ],
+  "bin": {
+    "spinnaker-mcp": "run.js"
+  },
+  "scripts": {
+    "postinstall": "node postinstall.js"
+  },
+  "files": [
+    "run.js",
+    "postinstall.js"
+  ],
+  "engines": {
+    "node": ">=18"
+  }
+}
