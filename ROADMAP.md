@@ -2,7 +2,7 @@
 
 This document outlines the planned features and improvements for Spinnaker-MCP. The Spinnaker Gate API is extensive (~150+ endpoints across 60+ controllers), and this MCP server currently covers the highest-value operations. The roadmap is organized by priority and grouped by API domain.
 
-## Current State (v0.3.0)
+## Current State (v0.3.2)
 
 **37 tools** covering the core deployment workflow, pipeline lifecycle, and infrastructure visibility:
 
@@ -82,178 +82,51 @@ Read-only visibility into Spinnaker-managed infrastructure.
 
 ---
 
-## Phase 3 — Tasks and Operations (v0.3.0)
+## Phase 3 — Tasks and Manual Judgment
 
-Full task management and operational actions.
+High-value additions for interactive deployment workflows. These would let an LLM approve/reject manual judgment stages and manage ad-hoc operations.
 
 ### Task Management
 
 - [ ] `create_task` — Create an ad-hoc orchestration task (scale, destroy, rollback, etc.) (`POST /tasks`)
 - [ ] `cancel_task` — Cancel a running task (`PUT /tasks/{id}/cancel`)
-- [ ] `list_application_tasks` — List all tasks for an application with status filtering
-- [ ] `get_task_details` — Get detailed task execution information
 
 ### Manual Judgment
 
 - [ ] `approve_stage` — Approve a manual judgment stage (via `PATCH /pipelines/{id}/stages/{stageId}`)
 - [ ] `reject_stage` — Reject a manual judgment stage
 
-This is critical for interactive pipeline workflows where an LLM assists in deployment decisions.
-
 ---
 
-## Phase 4 — Canary Analysis (v0.5.0)
+## Future — Community-Driven Expansion
 
-Integration with Kayenta for automated canary analysis.
+The following areas cover the remaining ~110 Gate API endpoints. They are documented here as a reference for contributors. PRs are welcome — open an issue first for larger features.
 
-### Canary Configs
+### Canary Analysis (Kayenta)
 
-- [ ] `list_canary_configs` — List all canary configuration templates
-- [ ] `get_canary_config` — Get a specific canary config
-- [ ] `save_canary_config` — Create or update a canary config
-- [ ] `delete_canary_config` — Delete a canary config
+- [ ] `list_canary_configs`, `get_canary_config`, `save_canary_config`, `delete_canary_config`
+- [ ] `start_canary`, `get_canary_result`, `list_canary_results`
 
-### Canary Executions
+### Artifacts and Builds
 
-- [ ] `start_canary` — Start a canary analysis execution (`POST /v2/canaries/canary/{configId}`)
-- [ ] `get_canary_result` — Get canary analysis results with metric comparisons
-- [ ] `list_canary_results` — List canary results for an application
+- [ ] `list_artifact_accounts`, `list_artifact_versions`, `fetch_artifact`
+- [ ] `list_build_masters`, `get_build`, `trigger_webhook`
 
-### Canary Metadata
+### Managed Delivery (Keel)
 
-- [ ] `list_canary_judges` — List configured canary judges
-- [ ] `list_metrics_services` — List available metrics service metadata
-- [ ] `list_canary_accounts` — List Kayenta account integrations
+- [ ] Delivery configs CRUD, resource management, environment controls (pin/veto/approve)
 
----
+### Kubernetes Native
 
-## Phase 5 — Artifacts and Builds (v0.6.0)
+- [ ] `get_manifest`, `deploy_manifest`, `scale_manifest`, `rollback_manifest`
 
-Artifact management and CI/CD build integration.
+### Pipeline Templates (v2)
 
-### Artifacts
+- [ ] Template CRUD, plan/preview, dependency listing
 
-- [ ] `list_artifact_accounts` — List configured artifact sources (Docker, GCS, S3, Maven, etc.)
-- [ ] `list_artifact_names` — List artifact names for an account
-- [ ] `list_artifact_versions` — List available versions for an artifact
-- [ ] `fetch_artifact` — Fetch artifact contents (streaming)
+### Observability
 
-### Builds (v3 API)
-
-- [ ] `list_build_masters` — List CI integrations (Jenkins, Travis, Wercker, Concourse, Google Cloud Build)
-- [ ] `list_build_jobs` — List jobs for a build master
-- [ ] `get_build` — Get a specific build result
-- [ ] `list_builds` — List builds for a job
-
-### Webhooks
-
-- [ ] `trigger_webhook` — Post a webhook to trigger pipelines (`POST /webhooks/webhook/{source}`)
-- [ ] `list_preconfigured_webhooks` — List preconfigured webhook stage types
-
----
-
-## Phase 6 — Managed Delivery / Keel (v0.7.0)
-
-Integration with Spinnaker's declarative delivery system.
-
-### Delivery Configs
-
-- [ ] `get_delivery_config` — Get a delivery config definition
-- [ ] `save_delivery_config` — Create or update a delivery config
-- [ ] `delete_delivery_config` — Delete a delivery config
-- [ ] `validate_delivery_config` — Validate a delivery config before saving
-- [ ] `diff_delivery_config` — Diff changes to a delivery config
-
-### Resource Management
-
-- [ ] `get_managed_resource` — Get a managed resource by ID
-- [ ] `get_resource_status` — Get current resource status
-- [ ] `pause_resource` — Pause management of a resource
-- [ ] `resume_resource` — Resume management of a resource
-- [ ] `export_resource` — Export a resource definition from running infrastructure
-
-### Environment Control
-
-- [ ] `pin_artifact` — Pin an artifact version in an environment
-- [ ] `unpin_artifact` — Remove an artifact pin
-- [ ] `veto_artifact` — Veto an artifact version from promotion
-- [ ] `mark_artifact_bad` — Mark an artifact version as bad
-- [ ] `mark_artifact_good` — Mark an artifact version as good
-- [ ] `list_constraints` — List constraint states for an environment
-- [ ] `update_constraint` — Approve or reject an environment constraint
-
-### Application-Level Control
-
-- [ ] `get_managed_application` — Get managed delivery status for an application
-- [ ] `pause_managed_application` — Pause all managed delivery for an application
-- [ ] `resume_managed_application` — Resume managed delivery for an application
-
----
-
-## Phase 7 — Kubernetes Native (v0.8.0)
-
-Kubernetes-specific operations for the most common Spinnaker cloud provider.
-
-### Manifests
-
-- [ ] `get_manifest` — Get a Kubernetes manifest by account, namespace, and name
-- [ ] `deploy_manifest` — Deploy a manifest via ad-hoc task
-- [ ] `delete_manifest` — Delete a manifest via ad-hoc task
-- [ ] `patch_manifest` — Patch a manifest via ad-hoc task
-- [ ] `scale_manifest` — Scale a manifest (replicas) via ad-hoc task
-- [ ] `rollback_manifest` — Rollback to a previous manifest version
-- [ ] `undo_rollout` — Undo a Kubernetes rollout
-
-### Server Group Managers
-
-- [ ] `list_server_group_managers` — List Kubernetes Deployments/StatefulSets/ReplicaSets
-
----
-
-## Phase 8 — Pipeline Templates (v0.9.0)
-
-Reusable pipeline templates for standardized workflows.
-
-### V2 Templates
-
-- [ ] `list_pipeline_templates` — List all pipeline templates
-- [ ] `get_pipeline_template` — Get a specific template with version
-- [ ] `create_pipeline_template` — Create a new pipeline template
-- [ ] `update_pipeline_template` — Update an existing template
-- [ ] `delete_pipeline_template` — Delete a template
-- [ ] `plan_pipeline_template` — Plan/preview a template config before saving
-- [ ] `list_template_dependents` — List pipelines that depend on a template
-
----
-
-## Phase 9 — Observability and Metadata (v0.10.0)
-
-### Projects
-
-- [ ] `list_projects` — List all Spinnaker projects (groups of applications)
-- [ ] `get_project` — Get project details with associated clusters and pipelines
-
-### Entity Tags
-
-- [ ] `list_entity_tags` — List entity tags with rich filtering
-- [ ] `create_entity_tags` — Create or update entity tags
-- [ ] `delete_entity_tags` — Delete specific tags from an entity
-
-### Notifications
-
-- [ ] `get_notification_config` — Get notification preferences for an application
-- [ ] `save_notification_config` — Save notification preferences
-- [ ] `list_notification_types` — List available notification types (Slack, email, PagerDuty, etc.)
-
-### Search
-
-- [ ] `search_infrastructure` — Global search across all Spinnaker resources (applications, server groups, instances, load balancers)
-
-### System
-
-- [ ] `get_gate_version` — Get the Spinnaker Gate version
-- [ ] `get_current_user` — Get the authenticated user's info and roles
-- [ ] `validate_cron` — Validate a cron expression for pipeline triggers
+- [ ] Projects, entity tags, notifications, global search, system info
 
 ---
 
@@ -261,49 +134,42 @@ Reusable pipeline templates for standardized workflows.
 
 ### Authentication
 
+- [x] Bearer token, basic auth, x509 client certificates
 - [ ] OAuth2/OIDC token refresh — Automatic token refresh for OAuth-based auth
 - [ ] Cookie-based auth — Support session cookies from browser SSO flows
-- [ ] IAP (Identity-Aware Proxy) — Google Cloud IAP service account auth
-- [ ] SAML assertion forwarding — For environments using SAML-based SSO
 
 ### Transport and Protocol
 
-- [ ] MCP Resources — Expose read-only data as MCP resources (e.g., `spinnaker://application/{name}`, `spinnaker://execution/{id}`)
-- [ ] MCP Prompts — Pre-built prompt templates for common workflows (deploy review, incident response, canary analysis)
-- [ ] Session-aware tools — Stateful context tracking for multi-turn deployment conversations
-- [ ] Rate limit awareness — Parse `X-RateLimit-*` headers and expose remaining capacity
+- [x] stdio and Streamable HTTP transports
+- [ ] MCP Resources — Expose read-only data as MCP resources (e.g., `spinnaker://application/{name}`)
+- [ ] MCP Prompts — Pre-built prompt templates for common workflows (deploy review, incident response)
 
 ### Developer Experience
 
+- [x] `--version` / `--help` CLI flags
+- [x] Tool annotations (readOnly, mutating, destructive hints)
 - [ ] `--toolsets` CLI flag — Enable/disable tool groups (e.g., `--toolsets=pipelines,executions`)
-- [ ] `--tools` CLI flag — Enable specific tools by name
-- [ ] OpenTelemetry integration — Trace and metric export for tool call volume and latency
-- [ ] Structured logging — JSON log output with configurable verbosity
 - [ ] Health check endpoint — `/healthz` for container orchestration
 
 ### Distribution
 
+- [x] npm — `npx spinnaker-mcp` or `npm install -g spinnaker-mcp`
+- [x] Docker Hub — `drumsergio/spinnaker-mcp`
 - [ ] Homebrew tap — `brew install GeiserX/tap/spinnaker-mcp`
 - [ ] AUR package — Arch Linux user repository
 - [ ] Helm chart — Deploy as a sidecar or standalone service in Kubernetes
-- [ ] Nix flake — Reproducible builds for Nix users
-
-### Ecosystem Integrations
-
-- [ ] n8n community node (`n8n-nodes-spinnaker-mcp`) — Workflow automation for Spinnaker operations
-- [ ] Home Assistant integration (`spinnaker-ha`) — Dashboard cards for deployment status
-- [ ] Unraid CA template — Community Applications template for self-hosted users
-- [ ] Portainer community template — One-click deploy via Portainer
-- [ ] CasaOS app — Self-hosted platform integration
-- [ ] Runtipi app — Custom app store entry
 
 ### Registry Listings
 
-- [ ] MCP Official Registry — `mcp-publisher` CLI submission
-- [ ] Glama — AAA score listing
+- [x] MCP Official Registry — Published via `mcp-publisher` CLI
+- [x] Glama — Listed with release, 37 tools detected
+- [x] awesome-mcp-servers — PR to `punkpeye/awesome-mcp-servers` (Cloud Platforms section)
+- [x] ToolSDK Registry — PR to `toolsdk-ai/toolsdk-mcp-registry` (cloud-platforms)
+- [x] awesome-devops-mcp-servers — PR to `rohitg00/awesome-devops-mcp-servers`
 - [ ] mcpservers.org — Web form submission
-- [ ] awesome-mcp-servers — PR to curated list
-- [ ] mcp.so — Listing
+- [ ] mcp.so — Auto-indexed from GitHub
+- [ ] `appcypher/awesome-mcp-servers` — PR to second-largest MCP list
+- [ ] `wong2/awesome-mcp-servers` — PR to third-largest MCP list
 
 ---
 
