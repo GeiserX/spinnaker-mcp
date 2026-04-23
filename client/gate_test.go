@@ -503,3 +503,613 @@ func TestNewGate_InsecureNoWarnOnHTTP(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }
+
+func TestGateClient_SavePipeline(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "POST" {
+			t.Errorf("expected POST, got %s", r.Method)
+		}
+		if r.URL.Path != "/pipelines" {
+			t.Errorf("unexpected path: %s", r.URL.Path)
+		}
+		body, _ := io.ReadAll(r.Body)
+		if !strings.Contains(string(body), `"name":"my-pipeline"`) {
+			t.Errorf("expected pipeline name in body, got %s", string(body))
+		}
+		w.Write([]byte(`{}`))
+	}))
+	defer srv.Close()
+
+	gate := newTestGate(t, srv.URL)
+	resp, err := gate.SavePipeline(context.Background(), map[string]any{"name": "my-pipeline", "application": "myapp"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if string(resp) != `{}` {
+		t.Errorf("unexpected response: %s", string(resp))
+	}
+}
+
+func TestGateClient_UpdatePipeline(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "PUT" {
+			t.Errorf("expected PUT, got %s", r.Method)
+		}
+		if r.URL.Path != "/pipelines/pipe-123" {
+			t.Errorf("unexpected path: %s", r.URL.Path)
+		}
+		body, _ := io.ReadAll(r.Body)
+		if !strings.Contains(string(body), `"name":"updated"`) {
+			t.Errorf("expected updated name in body, got %s", string(body))
+		}
+		w.Write([]byte(`{}`))
+	}))
+	defer srv.Close()
+
+	gate := newTestGate(t, srv.URL)
+	resp, err := gate.UpdatePipeline(context.Background(), "pipe-123", map[string]any{"name": "updated"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if string(resp) != `{}` {
+		t.Errorf("unexpected response: %s", string(resp))
+	}
+}
+
+func TestGateClient_DeletePipeline(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "DELETE" {
+			t.Errorf("expected DELETE, got %s", r.Method)
+		}
+		if r.URL.Path != "/pipelines/myapp/deploy" {
+			t.Errorf("unexpected path: %s", r.URL.Path)
+		}
+		w.Write([]byte(`{}`))
+	}))
+	defer srv.Close()
+
+	gate := newTestGate(t, srv.URL)
+	resp, err := gate.DeletePipeline(context.Background(), "myapp", "deploy")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if string(resp) != `{}` {
+		t.Errorf("unexpected response: %s", string(resp))
+	}
+}
+
+func TestGateClient_GetPipelineHistory(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/pipelineConfigs/config-abc/history" {
+			t.Errorf("unexpected path: %s", r.URL.Path)
+		}
+		if r.URL.Query().Get("limit") != "5" {
+			t.Errorf("expected limit=5, got %s", r.URL.Query().Get("limit"))
+		}
+		w.Write([]byte(`[{"id":"v1"},{"id":"v2"}]`))
+	}))
+	defer srv.Close()
+
+	gate := newTestGate(t, srv.URL)
+	resp, err := gate.GetPipelineHistory(context.Background(), "config-abc", 5)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if string(resp) != `[{"id":"v1"},{"id":"v2"}]` {
+		t.Errorf("unexpected response: %s", string(resp))
+	}
+}
+
+func TestGateClient_GetPipelineHistoryNoLimit(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Query().Get("limit") != "" {
+			t.Errorf("expected no limit param, got %q", r.URL.Query().Get("limit"))
+		}
+		w.Write([]byte(`[]`))
+	}))
+	defer srv.Close()
+
+	gate := newTestGate(t, srv.URL)
+	_, err := gate.GetPipelineHistory(context.Background(), "config-abc", 0)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestGateClient_RestartStage(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "PUT" {
+			t.Errorf("expected PUT, got %s", r.Method)
+		}
+		if r.URL.Path != "/pipelines/exec-123/stages/stage-1/restart" {
+			t.Errorf("unexpected path: %s", r.URL.Path)
+		}
+		body, _ := io.ReadAll(r.Body)
+		if len(body) == 0 {
+			t.Error("expected non-empty body")
+		}
+		w.Write([]byte(`{}`))
+	}))
+	defer srv.Close()
+
+	gate := newTestGate(t, srv.URL)
+	resp, err := gate.RestartStage(context.Background(), "exec-123", "stage-1")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if string(resp) != `{}` {
+		t.Errorf("unexpected response: %s", string(resp))
+	}
+}
+
+func TestGateClient_SearchExecutions(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/applications/myapp/executions/search" {
+			t.Errorf("unexpected path: %s", r.URL.Path)
+		}
+		if r.URL.Query().Get("pipelineName") != "deploy" {
+			t.Errorf("expected pipelineName=deploy, got %s", r.URL.Query().Get("pipelineName"))
+		}
+		if r.URL.Query().Get("statuses") != "RUNNING" {
+			t.Errorf("expected statuses=RUNNING, got %s", r.URL.Query().Get("statuses"))
+		}
+		w.Write([]byte(`[]`))
+	}))
+	defer srv.Close()
+
+	gate := newTestGate(t, srv.URL)
+	resp, err := gate.SearchExecutions(context.Background(), "myapp", map[string]string{
+		"pipelineName": "deploy",
+		"statuses":     "RUNNING",
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if string(resp) != `[]` {
+		t.Errorf("unexpected response: %s", string(resp))
+	}
+}
+
+func TestGateClient_SearchExecutionsEmptyValues(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Query().Get("statuses") != "" {
+			t.Errorf("expected no statuses param, got %q", r.URL.Query().Get("statuses"))
+		}
+		w.Write([]byte(`[]`))
+	}))
+	defer srv.Close()
+
+	gate := newTestGate(t, srv.URL)
+	_, err := gate.SearchExecutions(context.Background(), "myapp", map[string]string{"statuses": ""})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestGateClient_EvaluateExpression(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "POST" {
+			t.Errorf("expected POST, got %s", r.Method)
+		}
+		if r.URL.Path != "/pipelines/exec-123/evaluateExpression" {
+			t.Errorf("unexpected path: %s", r.URL.Path)
+		}
+		body, _ := io.ReadAll(r.Body)
+		if !strings.Contains(string(body), `"expression":"${trigger.buildNumber}"`) {
+			t.Errorf("expected expression in body, got %s", string(body))
+		}
+		w.Write([]byte(`{"result":"42"}`))
+	}))
+	defer srv.Close()
+
+	gate := newTestGate(t, srv.URL)
+	resp, err := gate.EvaluateExpression(context.Background(), "exec-123", "${trigger.buildNumber}")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if string(resp) != `{"result":"42"}` {
+		t.Errorf("unexpected response: %s", string(resp))
+	}
+}
+
+func TestGateClient_ListStrategies(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/applications/myapp/strategyConfigs" {
+			t.Errorf("unexpected path: %s", r.URL.Path)
+		}
+		w.Write([]byte(`[{"name":"highlander"}]`))
+	}))
+	defer srv.Close()
+
+	gate := newTestGate(t, srv.URL)
+	resp, err := gate.ListStrategies(context.Background(), "myapp")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if string(resp) != `[{"name":"highlander"}]` {
+		t.Errorf("unexpected response: %s", string(resp))
+	}
+}
+
+func TestGateClient_SaveStrategy(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "POST" {
+			t.Errorf("expected POST, got %s", r.Method)
+		}
+		if r.URL.Path != "/strategies" {
+			t.Errorf("unexpected path: %s", r.URL.Path)
+		}
+		body, _ := io.ReadAll(r.Body)
+		if !strings.Contains(string(body), `"name":"highlander"`) {
+			t.Errorf("expected strategy name in body, got %s", string(body))
+		}
+		w.Write([]byte(`{}`))
+	}))
+	defer srv.Close()
+
+	gate := newTestGate(t, srv.URL)
+	resp, err := gate.SaveStrategy(context.Background(), map[string]any{"name": "highlander", "application": "myapp"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if string(resp) != `{}` {
+		t.Errorf("unexpected response: %s", string(resp))
+	}
+}
+
+func TestGateClient_DeleteStrategy(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "DELETE" {
+			t.Errorf("expected DELETE, got %s", r.Method)
+		}
+		if r.URL.Path != "/strategies/myapp/highlander" {
+			t.Errorf("unexpected path: %s", r.URL.Path)
+		}
+		w.Write([]byte(`{}`))
+	}))
+	defer srv.Close()
+
+	gate := newTestGate(t, srv.URL)
+	resp, err := gate.DeleteStrategy(context.Background(), "myapp", "highlander")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if string(resp) != `{}` {
+		t.Errorf("unexpected response: %s", string(resp))
+	}
+}
+
+func TestGateClient_ListClusters(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/applications/myapp/clusters" {
+			t.Errorf("unexpected path: %s", r.URL.Path)
+		}
+		w.Write([]byte(`{"prod":["myapp-prod"]}`))
+	}))
+	defer srv.Close()
+
+	gate := newTestGate(t, srv.URL)
+	resp, err := gate.ListClusters(context.Background(), "myapp")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if string(resp) != `{"prod":["myapp-prod"]}` {
+		t.Errorf("unexpected response: %s", string(resp))
+	}
+}
+
+func TestGateClient_GetCluster(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/applications/myapp/clusters/prod/myapp-prod" {
+			t.Errorf("unexpected path: %s", r.URL.Path)
+		}
+		w.Write([]byte(`{"name":"myapp-prod"}`))
+	}))
+	defer srv.Close()
+
+	gate := newTestGate(t, srv.URL)
+	resp, err := gate.GetCluster(context.Background(), "myapp", "prod", "myapp-prod")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if string(resp) != `{"name":"myapp-prod"}` {
+		t.Errorf("unexpected response: %s", string(resp))
+	}
+}
+
+func TestGateClient_GetScalingActivities(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/applications/myapp/clusters/prod/myapp-prod/serverGroups/myapp-v001/scalingActivities" {
+			t.Errorf("unexpected path: %s", r.URL.Path)
+		}
+		if r.URL.Query().Get("provider") != "aws" {
+			t.Errorf("expected provider=aws, got %s", r.URL.Query().Get("provider"))
+		}
+		w.Write([]byte(`[]`))
+	}))
+	defer srv.Close()
+
+	gate := newTestGate(t, srv.URL)
+	resp, err := gate.GetScalingActivities(context.Background(), "myapp", "prod", "myapp-prod", "myapp-v001", "aws")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if string(resp) != `[]` {
+		t.Errorf("unexpected response: %s", string(resp))
+	}
+}
+
+func TestGateClient_GetScalingActivitiesNoProvider(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Query().Get("provider") != "" {
+			t.Errorf("expected no provider param, got %q", r.URL.Query().Get("provider"))
+		}
+		w.Write([]byte(`[]`))
+	}))
+	defer srv.Close()
+
+	gate := newTestGate(t, srv.URL)
+	_, err := gate.GetScalingActivities(context.Background(), "myapp", "prod", "myapp-prod", "myapp-v001", "")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestGateClient_GetTargetServerGroup(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/applications/myapp/clusters/prod/myapp-prod/aws/us-east-1/serverGroups/target/newest" {
+			t.Errorf("unexpected path: %s", r.URL.Path)
+		}
+		w.Write([]byte(`{"name":"myapp-v002"}`))
+	}))
+	defer srv.Close()
+
+	gate := newTestGate(t, srv.URL)
+	resp, err := gate.GetTargetServerGroup(context.Background(), "myapp", "prod", "myapp-prod", "aws", "us-east-1", "newest")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if string(resp) != `{"name":"myapp-v002"}` {
+		t.Errorf("unexpected response: %s", string(resp))
+	}
+}
+
+func TestGateClient_ListFirewalls(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/securityGroups" {
+			t.Errorf("unexpected path: %s", r.URL.Path)
+		}
+		w.Write([]byte(`[{"name":"sg-default"}]`))
+	}))
+	defer srv.Close()
+
+	gate := newTestGate(t, srv.URL)
+	resp, err := gate.ListFirewalls(context.Background())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if string(resp) != `[{"name":"sg-default"}]` {
+		t.Errorf("unexpected response: %s", string(resp))
+	}
+}
+
+func TestGateClient_GetFirewall(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/securityGroups/prod/us-east-1/sg-default" {
+			t.Errorf("unexpected path: %s", r.URL.Path)
+		}
+		w.Write([]byte(`{"name":"sg-default"}`))
+	}))
+	defer srv.Close()
+
+	gate := newTestGate(t, srv.URL)
+	resp, err := gate.GetFirewall(context.Background(), "prod", "us-east-1", "sg-default")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if string(resp) != `{"name":"sg-default"}` {
+		t.Errorf("unexpected response: %s", string(resp))
+	}
+}
+
+func TestGateClient_GetInstance(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/instances/prod/us-east-1/i-abc123" {
+			t.Errorf("unexpected path: %s", r.URL.Path)
+		}
+		w.Write([]byte(`{"instanceId":"i-abc123"}`))
+	}))
+	defer srv.Close()
+
+	gate := newTestGate(t, srv.URL)
+	resp, err := gate.GetInstance(context.Background(), "prod", "us-east-1", "i-abc123")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if string(resp) != `{"instanceId":"i-abc123"}` {
+		t.Errorf("unexpected response: %s", string(resp))
+	}
+}
+
+func TestGateClient_GetConsoleOutput(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/instances/prod/us-east-1/i-abc123/console" {
+			t.Errorf("unexpected path: %s", r.URL.Path)
+		}
+		if r.URL.Query().Get("provider") != "aws" {
+			t.Errorf("expected provider=aws, got %s", r.URL.Query().Get("provider"))
+		}
+		w.Write([]byte(`{"output":"boot log"}`))
+	}))
+	defer srv.Close()
+
+	gate := newTestGate(t, srv.URL)
+	resp, err := gate.GetConsoleOutput(context.Background(), "prod", "us-east-1", "i-abc123", "aws")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if string(resp) != `{"output":"boot log"}` {
+		t.Errorf("unexpected response: %s", string(resp))
+	}
+}
+
+func TestGateClient_GetConsoleOutputNoProvider(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Query().Get("provider") != "" {
+			t.Errorf("expected no provider param, got %q", r.URL.Query().Get("provider"))
+		}
+		w.Write([]byte(`{"output":"boot log"}`))
+	}))
+	defer srv.Close()
+
+	gate := newTestGate(t, srv.URL)
+	_, err := gate.GetConsoleOutput(context.Background(), "prod", "us-east-1", "i-abc123", "")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestGateClient_FindImages(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/images/find" {
+			t.Errorf("unexpected path: %s", r.URL.Path)
+		}
+		if r.URL.Query().Get("provider") != "aws" {
+			t.Errorf("expected provider=aws, got %s", r.URL.Query().Get("provider"))
+		}
+		if r.URL.Query().Get("q") != "my-image" {
+			t.Errorf("expected q=my-image, got %s", r.URL.Query().Get("q"))
+		}
+		w.Write([]byte(`[{"imageName":"my-image-v1"}]`))
+	}))
+	defer srv.Close()
+
+	gate := newTestGate(t, srv.URL)
+	resp, err := gate.FindImages(context.Background(), map[string]string{
+		"provider": "aws",
+		"q":        "my-image",
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if string(resp) != `[{"imageName":"my-image-v1"}]` {
+		t.Errorf("unexpected response: %s", string(resp))
+	}
+}
+
+func TestGateClient_FindImagesEmptyValues(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Query().Get("provider") != "" {
+			t.Errorf("expected no provider param, got %q", r.URL.Query().Get("provider"))
+		}
+		w.Write([]byte(`[]`))
+	}))
+	defer srv.Close()
+
+	gate := newTestGate(t, srv.URL)
+	_, err := gate.FindImages(context.Background(), map[string]string{"provider": ""})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestGateClient_GetImageTags(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/images/tags" {
+			t.Errorf("unexpected path: %s", r.URL.Path)
+		}
+		if r.URL.Query().Get("account") != "my-registry" {
+			t.Errorf("expected account=my-registry, got %s", r.URL.Query().Get("account"))
+		}
+		if r.URL.Query().Get("repository") != "myapp" {
+			t.Errorf("expected repository=myapp, got %s", r.URL.Query().Get("repository"))
+		}
+		w.Write([]byte(`["v1.0","v1.1"]`))
+	}))
+	defer srv.Close()
+
+	gate := newTestGate(t, srv.URL)
+	resp, err := gate.GetImageTags(context.Background(), "my-registry", "myapp")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if string(resp) != `["v1.0","v1.1"]` {
+		t.Errorf("unexpected response: %s", string(resp))
+	}
+}
+
+func TestGateClient_ListNetworks(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/networks" {
+			t.Errorf("unexpected path: %s", r.URL.Path)
+		}
+		w.Write([]byte(`{"aws":[{"id":"vpc-123"}]}`))
+	}))
+	defer srv.Close()
+
+	gate := newTestGate(t, srv.URL)
+	resp, err := gate.ListNetworks(context.Background())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if string(resp) != `{"aws":[{"id":"vpc-123"}]}` {
+		t.Errorf("unexpected response: %s", string(resp))
+	}
+}
+
+func TestGateClient_ListSubnets(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/subnets/aws" {
+			t.Errorf("unexpected path: %s", r.URL.Path)
+		}
+		w.Write([]byte(`[{"id":"subnet-123"}]`))
+	}))
+	defer srv.Close()
+
+	gate := newTestGate(t, srv.URL)
+	resp, err := gate.ListSubnets(context.Background(), "aws")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if string(resp) != `[{"id":"subnet-123"}]` {
+		t.Errorf("unexpected response: %s", string(resp))
+	}
+}
+
+func TestGateClient_ListAccounts(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/credentials" {
+			t.Errorf("unexpected path: %s", r.URL.Path)
+		}
+		w.Write([]byte(`[{"name":"prod","type":"aws"}]`))
+	}))
+	defer srv.Close()
+
+	gate := newTestGate(t, srv.URL)
+	resp, err := gate.ListAccounts(context.Background())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if string(resp) != `[{"name":"prod","type":"aws"}]` {
+		t.Errorf("unexpected response: %s", string(resp))
+	}
+}
+
+func TestGateClient_GetAccount(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/credentials/prod" {
+			t.Errorf("unexpected path: %s", r.URL.Path)
+		}
+		w.Write([]byte(`{"name":"prod","type":"aws"}`))
+	}))
+	defer srv.Close()
+
+	gate := newTestGate(t, srv.URL)
+	resp, err := gate.GetAccount(context.Background(), "prod")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if string(resp) != `{"name":"prod","type":"aws"}` {
+		t.Errorf("unexpected response: %s", string(resp))
+	}
+}
