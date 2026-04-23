@@ -184,6 +184,10 @@ func (c *GateClient) put(ctx context.Context, path string, payload any) ([]byte,
 	return c.doWithBody(ctx, "PUT", path, payload)
 }
 
+func (c *GateClient) del(ctx context.Context, path string) ([]byte, error) {
+	return c.doWithBody(ctx, "DELETE", path, nil)
+}
+
 // --- Applications ---
 
 func (c *GateClient) ListApplications(ctx context.Context) ([]byte, error) {
@@ -212,6 +216,27 @@ func (c *GateClient) TriggerPipeline(ctx context.Context, app, pipelineName stri
 	}
 	return c.post(ctx, fmt.Sprintf("/pipelines/v2/%s/%s",
 		url.PathEscape(app), url.PathEscape(pipelineName)), body)
+}
+
+func (c *GateClient) SavePipeline(ctx context.Context, pipeline map[string]any) ([]byte, error) {
+	return c.post(ctx, "/pipelines", pipeline)
+}
+
+func (c *GateClient) UpdatePipeline(ctx context.Context, pipelineID string, pipeline map[string]any) ([]byte, error) {
+	return c.put(ctx, fmt.Sprintf("/pipelines/%s", url.PathEscape(pipelineID)), pipeline)
+}
+
+func (c *GateClient) DeletePipeline(ctx context.Context, app, pipelineName string) ([]byte, error) {
+	return c.del(ctx, fmt.Sprintf("/pipelines/%s/%s",
+		url.PathEscape(app), url.PathEscape(pipelineName)))
+}
+
+func (c *GateClient) GetPipelineHistory(ctx context.Context, pipelineConfigID string, limit int) ([]byte, error) {
+	q := url.Values{}
+	if limit > 0 {
+		q.Set("limit", strconv.Itoa(limit))
+	}
+	return c.get(ctx, fmt.Sprintf("/pipelineConfigs/%s/history", url.PathEscape(pipelineConfigID)), q)
 }
 
 // --- Executions ---
@@ -252,6 +277,41 @@ func (c *GateClient) ResumeExecution(ctx context.Context, executionID string) ([
 	return c.put(ctx, fmt.Sprintf("/pipelines/%s/resume", url.PathEscape(executionID)), nil)
 }
 
+func (c *GateClient) RestartStage(ctx context.Context, executionID, stageID string) ([]byte, error) {
+	return c.put(ctx, fmt.Sprintf("/pipelines/%s/stages/%s/restart",
+		url.PathEscape(executionID), url.PathEscape(stageID)), map[string]any{})
+}
+
+func (c *GateClient) SearchExecutions(ctx context.Context, app string, params map[string]string) ([]byte, error) {
+	q := url.Values{}
+	for k, v := range params {
+		if v != "" {
+			q.Set(k, v)
+		}
+	}
+	return c.get(ctx, fmt.Sprintf("/applications/%s/executions/search", url.PathEscape(app)), q)
+}
+
+func (c *GateClient) EvaluateExpression(ctx context.Context, executionID, expression string) ([]byte, error) {
+	return c.post(ctx, fmt.Sprintf("/pipelines/%s/evaluateExpression",
+		url.PathEscape(executionID)), map[string]any{"expression": expression})
+}
+
+// --- Strategies ---
+
+func (c *GateClient) ListStrategies(ctx context.Context, app string) ([]byte, error) {
+	return c.get(ctx, fmt.Sprintf("/applications/%s/strategyConfigs", url.PathEscape(app)), nil)
+}
+
+func (c *GateClient) SaveStrategy(ctx context.Context, strategy map[string]any) ([]byte, error) {
+	return c.post(ctx, "/strategies", strategy)
+}
+
+func (c *GateClient) DeleteStrategy(ctx context.Context, app, strategyName string) ([]byte, error) {
+	return c.del(ctx, fmt.Sprintf("/strategies/%s/%s",
+		url.PathEscape(app), url.PathEscape(strategyName)))
+}
+
 // --- Infrastructure ---
 
 func (c *GateClient) ListServerGroups(ctx context.Context, app string) ([]byte, error) {
@@ -260,6 +320,98 @@ func (c *GateClient) ListServerGroups(ctx context.Context, app string) ([]byte, 
 
 func (c *GateClient) ListLoadBalancers(ctx context.Context, app string) ([]byte, error) {
 	return c.get(ctx, fmt.Sprintf("/applications/%s/loadBalancers", url.PathEscape(app)), nil)
+}
+
+// --- Clusters ---
+
+func (c *GateClient) ListClusters(ctx context.Context, app string) ([]byte, error) {
+	return c.get(ctx, fmt.Sprintf("/applications/%s/clusters", url.PathEscape(app)), nil)
+}
+
+func (c *GateClient) GetCluster(ctx context.Context, app, account, cluster string) ([]byte, error) {
+	return c.get(ctx, fmt.Sprintf("/applications/%s/clusters/%s/%s",
+		url.PathEscape(app), url.PathEscape(account), url.PathEscape(cluster)), nil)
+}
+
+func (c *GateClient) GetScalingActivities(ctx context.Context, app, account, cluster, serverGroupName, provider string) ([]byte, error) {
+	q := url.Values{}
+	if provider != "" {
+		q.Set("provider", provider)
+	}
+	return c.get(ctx, fmt.Sprintf("/applications/%s/clusters/%s/%s/serverGroups/%s/scalingActivities",
+		url.PathEscape(app), url.PathEscape(account), url.PathEscape(cluster), url.PathEscape(serverGroupName)), q)
+}
+
+func (c *GateClient) GetTargetServerGroup(ctx context.Context, app, account, cluster, cloudProvider, scope, target string) ([]byte, error) {
+	return c.get(ctx, fmt.Sprintf("/applications/%s/clusters/%s/%s/%s/%s/serverGroups/target/%s",
+		url.PathEscape(app), url.PathEscape(account), url.PathEscape(cluster),
+		url.PathEscape(cloudProvider), url.PathEscape(scope), url.PathEscape(target)), nil)
+}
+
+// --- Security Groups / Firewalls ---
+
+func (c *GateClient) ListFirewalls(ctx context.Context) ([]byte, error) {
+	return c.get(ctx, "/securityGroups", nil)
+}
+
+func (c *GateClient) GetFirewall(ctx context.Context, account, region, name string) ([]byte, error) {
+	return c.get(ctx, fmt.Sprintf("/securityGroups/%s/%s/%s",
+		url.PathEscape(account), url.PathEscape(region), url.PathEscape(name)), nil)
+}
+
+// --- Instances ---
+
+func (c *GateClient) GetInstance(ctx context.Context, account, region, instanceID string) ([]byte, error) {
+	return c.get(ctx, fmt.Sprintf("/instances/%s/%s/%s",
+		url.PathEscape(account), url.PathEscape(region), url.PathEscape(instanceID)), nil)
+}
+
+func (c *GateClient) GetConsoleOutput(ctx context.Context, account, region, instanceID, provider string) ([]byte, error) {
+	q := url.Values{}
+	if provider != "" {
+		q.Set("provider", provider)
+	}
+	return c.get(ctx, fmt.Sprintf("/instances/%s/%s/%s/console",
+		url.PathEscape(account), url.PathEscape(region), url.PathEscape(instanceID)), q)
+}
+
+// --- Images ---
+
+func (c *GateClient) FindImages(ctx context.Context, params map[string]string) ([]byte, error) {
+	q := url.Values{}
+	for k, v := range params {
+		if v != "" {
+			q.Set(k, v)
+		}
+	}
+	return c.get(ctx, "/images/find", q)
+}
+
+func (c *GateClient) GetImageTags(ctx context.Context, account, repository string) ([]byte, error) {
+	q := url.Values{}
+	q.Set("account", account)
+	q.Set("repository", repository)
+	return c.get(ctx, "/images/tags", q)
+}
+
+// --- Networks and Subnets ---
+
+func (c *GateClient) ListNetworks(ctx context.Context) ([]byte, error) {
+	return c.get(ctx, "/networks", nil)
+}
+
+func (c *GateClient) ListSubnets(ctx context.Context, cloudProvider string) ([]byte, error) {
+	return c.get(ctx, fmt.Sprintf("/subnets/%s", url.PathEscape(cloudProvider)), nil)
+}
+
+// --- Credentials / Accounts ---
+
+func (c *GateClient) ListAccounts(ctx context.Context) ([]byte, error) {
+	return c.get(ctx, "/credentials", nil)
+}
+
+func (c *GateClient) GetAccount(ctx context.Context, account string) ([]byte, error) {
+	return c.get(ctx, fmt.Sprintf("/credentials/%s", url.PathEscape(account)), nil)
 }
 
 // --- Tasks ---
