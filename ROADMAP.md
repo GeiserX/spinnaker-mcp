@@ -2,14 +2,15 @@
 
 This document outlines the planned features and improvements for Spinnaker-MCP. The Spinnaker Gate API is extensive (~150+ endpoints across 60+ controllers), and this MCP server currently covers the highest-value operations. The roadmap is organized by priority and grouped by API domain.
 
-## Current State (v0.2.0)
+## Current State (v0.3.0)
 
-**13 tools** covering the core deployment workflow:
+**37 tools** covering the core deployment workflow, pipeline lifecycle, and infrastructure visibility:
 
 - Applications: list, get
-- Pipelines: list, get config, trigger
-- Executions: list, get, cancel, pause, resume
-- Infrastructure: server groups, load balancers
+- Pipelines: list, get config, trigger, save, update, delete, history
+- Executions: list, get, search, cancel, pause, resume, restart stage, evaluate expression
+- Strategies: list, save, delete
+- Infrastructure: server groups, load balancers, clusters, scaling activities, target server groups, firewalls, instances, console output, images, image tags, networks, subnets, accounts
 - Tasks: get status
 
 **Authentication**: Bearer token, basic auth, x509 client certificates
@@ -18,70 +19,70 @@ This document outlines the planned features and improvements for Spinnaker-MCP. 
 
 ---
 
-## Phase 1 — Pipeline Lifecycle (v0.2.0)
+## ~~Phase 1 — Pipeline Lifecycle (v0.3.0)~~ ✅
 
 Complete coverage of pipeline CRUD and execution management.
 
 ### Pipeline Configuration Management
 
-- [ ] `save_pipeline` — Save/create a pipeline definition (`POST /pipelines`)
-- [ ] `update_pipeline` — Update an existing pipeline definition (`PUT /pipelines/{id}`)
-- [ ] `delete_pipeline` — Delete a pipeline definition (`DELETE /pipelines/{application}/{pipelineName}`)
-- [ ] `get_pipeline_history` — Get revision history for a pipeline config (`GET /pipelineConfigs/{id}/history`)
+- [x] `save_pipeline` — Save/create a pipeline definition (`POST /pipelines`)
+- [x] `update_pipeline` — Update an existing pipeline definition (`PUT /pipelines/{id}`)
+- [x] `delete_pipeline` — Delete a pipeline definition (`DELETE /pipelines/{application}/{pipelineName}`)
+- [x] `get_pipeline_history` — Get revision history for a pipeline config (`GET /pipelineConfigs/{id}/history`)
 
 ### Execution Control
 
-- [ ] `restart_stage` — Restart a failed stage within an execution (`PUT /pipelines/{id}/stages/{stageId}/restart`)
-- [ ] `search_executions` — Rich search across executions by trigger type, time range, status, event ID (`GET /applications/{app}/executions/search`)
-- [ ] `evaluate_expression` — Evaluate a SpEL pipeline expression against an execution context (`POST /pipelines/{id}/evaluate/{expression}`)
+- [x] `restart_stage` — Restart a failed stage within an execution (`PUT /pipelines/{id}/stages/{stageId}/restart`)
+- [x] `search_executions` — Rich search across executions by trigger type, time range, status, event ID (`GET /applications/{app}/executions/search`)
+- [x] `evaluate_expression` — Evaluate a SpEL pipeline expression against an execution context (`POST /pipelines/{id}/evaluate/{expression}`)
 
 ### Strategy Management
 
-- [ ] `list_strategies` — List deployment strategy configurations for an application
-- [ ] `save_strategy` — Create or update a deployment strategy
-- [ ] `delete_strategy` — Delete a deployment strategy
+- [x] `list_strategies` — List deployment strategy configurations for an application
+- [x] `save_strategy` — Create or update a deployment strategy
+- [x] `delete_strategy` — Delete a deployment strategy
 
 ---
 
-## Phase 2 — Infrastructure Deep Dive (v0.3.0)
+## ~~Phase 2 — Infrastructure Deep Dive (v0.3.0)~~ ✅
 
 Read-only visibility into Spinnaker-managed infrastructure.
 
 ### Clusters
 
-- [ ] `list_clusters` — List cluster names grouped by account (`GET /applications/{app}/clusters`)
-- [ ] `get_cluster` — Get cluster details including server groups (`GET /applications/{app}/clusters/{account}/{cluster}`)
-- [ ] `get_scaling_activities` — Get scaling activities for a cluster (`GET .../scalingActivities`)
-- [ ] `get_target_server_group` — Target-based server group lookup (newest, oldest, ancestor)
+- [x] `list_clusters` — List cluster names grouped by account (`GET /applications/{app}/clusters`)
+- [x] `get_cluster` — Get cluster details including server groups (`GET /applications/{app}/clusters/{account}/{cluster}`)
+- [x] `get_scaling_activities` — Get scaling activities for a cluster (`GET .../scalingActivities`)
+- [x] `get_target_server_group` — Target-based server group lookup (newest, oldest, ancestor)
 
 ### Security Groups / Firewalls
 
-- [ ] `list_firewalls` — List all firewalls/security groups across accounts
-- [ ] `get_firewall` — Get firewall details by account, region, and name
+- [x] `list_firewalls` — List all firewalls/security groups across accounts
+- [x] `get_firewall` — Get firewall details by account, region, and name
 
 ### Instances
 
-- [ ] `get_instance` — Get instance details (health, metadata, launch time)
-- [ ] `get_console_output` — Get instance console output for debugging
+- [x] `get_instance` — Get instance details (health, metadata, launch time)
+- [x] `get_console_output` — Get instance console output for debugging
 
 ### Images
 
-- [ ] `find_images` — Search for machine images by tags, region, account
-- [ ] `get_image_tags` — List image tags for a repository
+- [x] `find_images` — Search for machine images by tags, region, account
+- [x] `get_image_tags` — List image tags for a repository
 
 ### Networks and Subnets
 
-- [ ] `list_networks` — List VPCs/networks by cloud provider
-- [ ] `list_subnets` — List subnets by cloud provider
+- [x] `list_networks` — List VPCs/networks by cloud provider
+- [x] `list_subnets` — List subnets by cloud provider
 
 ### Credentials / Accounts
 
-- [ ] `list_accounts` — List all configured cloud accounts/credentials
-- [ ] `get_account` — Get account details and permissions
+- [x] `list_accounts` — List all configured cloud accounts/credentials
+- [x] `get_account` — Get account details and permissions
 
 ---
 
-## Phase 3 — Tasks and Operations (v0.4.0)
+## Phase 3 — Tasks and Operations (v0.3.0)
 
 Full task management and operational actions.
 
