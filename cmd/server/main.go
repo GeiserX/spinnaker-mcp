@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"os"
 	"strconv"
@@ -15,6 +16,37 @@ import (
 )
 
 func main() {
+	for _, arg := range os.Args[1:] {
+		switch arg {
+		case "--version", "-v":
+			fmt.Println("spinnaker-mcp " + version.String())
+			return
+		case "--help", "-h":
+			fmt.Println("spinnaker-mcp " + version.String())
+			fmt.Println()
+			fmt.Println("Usage: spinnaker-mcp [flags]")
+			fmt.Println()
+			fmt.Println("Flags:")
+			fmt.Println("  --version, -v  Print version and exit")
+			fmt.Println("  --help, -h     Show this help message")
+			fmt.Println()
+			fmt.Println("Environment variables:")
+			fmt.Println("  GATE_URL       Spinnaker Gate API URL (default: http://localhost:8084)")
+			fmt.Println("  GATE_TOKEN     Bearer token for Gate authentication")
+			fmt.Println("  GATE_USER      Basic auth username (alternative to token)")
+			fmt.Println("  GATE_PASS      Basic auth password")
+			fmt.Println("  TRANSPORT      'stdio' for stdio transport (default: HTTP)")
+			fmt.Println("  MCP_PORT       HTTP listen port (default: 8085)")
+			fmt.Println("  MCP_BIND_ADDR  HTTP bind address (default: 127.0.0.1)")
+			return
+		default:
+			if strings.HasPrefix(arg, "-") {
+				fmt.Fprintf(os.Stderr, "unknown flag: %s\nRun 'spinnaker-mcp --help' for usage.\n", arg)
+				os.Exit(1)
+			}
+		}
+	}
+
 	log.Printf("Spinnaker MCP %s starting…", version.String())
 
 	cfg := config.LoadGateConfig()

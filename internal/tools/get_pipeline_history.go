@@ -19,6 +19,7 @@ func NewGetPipelineHistory(gate *client.GateClient) (mcp.Tool, server.ToolHandle
 		mcp.WithNumber("limit",
 			mcp.Description("Maximum number of history entries to return (default: 10)"),
 		),
+		readOnly(),
 	)
 
 	handler := func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {

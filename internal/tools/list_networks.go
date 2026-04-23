@@ -11,6 +11,7 @@ import (
 func NewListNetworks(gate *client.GateClient) (mcp.Tool, server.ToolHandlerFunc) {
 	tool := mcp.NewTool("list_networks",
 		mcp.WithDescription("List all networks (VPCs) across all Spinnaker accounts"),
+		readOnly(),
 	)
 
 	handler := func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {

@@ -24,6 +24,7 @@ func NewGetCluster(gate *client.GateClient) (mcp.Tool, server.ToolHandlerFunc) {
 			mcp.Required(),
 			mcp.Description("Cluster name"),
 		),
+		readOnly(),
 	)
 
 	handler := func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {

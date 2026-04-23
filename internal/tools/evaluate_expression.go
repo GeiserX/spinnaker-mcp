@@ -25,6 +25,7 @@ func NewEvaluateExpression(gate *client.GateClient) (mcp.Tool, server.ToolHandle
 			mcp.Required(),
 			mcp.Description("SpEL expression string to evaluate"),
 		),
+		readOnly(),
 	)
 
 	handler := func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {

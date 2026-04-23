@@ -22,6 +22,7 @@ func NewListExecutions(gate *client.GateClient) (mcp.Tool, server.ToolHandlerFun
 		mcp.WithString("statuses",
 			mcp.Description("Comma-separated execution statuses to filter by (e.g. RUNNING,SUCCEEDED,TERMINAL,CANCELED)"),
 		),
+		readOnly(),
 	)
 
 	handler := func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {

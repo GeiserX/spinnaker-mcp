@@ -12,6 +12,7 @@ import (
 func NewListApplications(gate *client.GateClient) (mcp.Tool, server.ToolHandlerFunc) {
 	tool := mcp.NewTool("list_applications",
 		mcp.WithDescription("List all Spinnaker applications with their metadata"),
+		readOnly(),
 	)
 
 	handler := func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {

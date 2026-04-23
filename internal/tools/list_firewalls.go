@@ -11,6 +11,7 @@ import (
 func NewListFirewalls(gate *client.GateClient) (mcp.Tool, server.ToolHandlerFunc) {
 	tool := mcp.NewTool("list_firewalls",
 		mcp.WithDescription("List all firewall rules (security groups) across all Spinnaker accounts"),
+		readOnly(),
 	)
 
 	handler := func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {

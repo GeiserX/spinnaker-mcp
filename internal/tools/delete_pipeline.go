@@ -20,6 +20,7 @@ func NewDeletePipeline(gate *client.GateClient) (mcp.Tool, server.ToolHandlerFun
 			mcp.Required(),
 			mcp.Description("Pipeline name to delete"),
 		),
+		destructive(),
 	)
 
 	handler := func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {

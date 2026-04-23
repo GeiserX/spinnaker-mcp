@@ -16,6 +16,7 @@ func NewListPipelines(gate *client.GateClient) (mcp.Tool, server.ToolHandlerFunc
 			mcp.Required(),
 			mcp.Description("Application name as registered in Spinnaker"),
 		),
+		readOnly(),
 	)
 
 	handler := func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {

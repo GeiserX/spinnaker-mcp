@@ -31,6 +31,7 @@ func NewSearchExecutions(gate *client.GateClient) (mcp.Tool, server.ToolHandlerF
 		mcp.WithString("event_id",
 			mcp.Description("Filter by event ID"),
 		),
+		readOnly(),
 	)
 
 	handler := func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {

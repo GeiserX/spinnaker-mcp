@@ -24,6 +24,7 @@ func NewTriggerPipeline(gate *client.GateClient) (mcp.Tool, server.ToolHandlerFu
 		mcp.WithString("parameters",
 			mcp.Description("JSON object of pipeline parameters (e.g. {\"tag\":\"v1.2.3\",\"env\":\"staging\"})"),
 		),
+		mutating(),
 	)
 
 	handler := func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
