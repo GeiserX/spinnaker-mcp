@@ -11,7 +11,7 @@ import (
 
 func NewRestartStage(gate *client.GateClient) (mcp.Tool, server.ToolHandlerFunc) {
 	tool := mcp.NewTool("restart_stage",
-		mcp.WithDescription("Restart a specific stage within a pipeline execution"),
+		mcp.WithDescription("Restart a specific failed or completed stage within a pipeline execution. Use this to retry a stage that failed due to a transient error without re-running the entire pipeline. Requires the execution ID and stage ID. Returns a confirmation message."),
 		mcp.WithString("execution_id",
 			mcp.Required(),
 			mcp.Description("Pipeline execution ID"),

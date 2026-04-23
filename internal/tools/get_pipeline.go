@@ -11,7 +11,7 @@ import (
 
 func NewGetPipeline(gate *client.GateClient) (mcp.Tool, server.ToolHandlerFunc) {
 	tool := mcp.NewTool("get_pipeline",
-		mcp.WithDescription("Get the full configuration of a specific pipeline by name"),
+		mcp.WithDescription("Get the full configuration of a specific pipeline by application and pipeline name. Use this to inspect pipeline stages, triggers, and parameters before triggering or modifying it. Returns the complete pipeline JSON definition including all stage configurations."),
 		mcp.WithString("application",
 			mcp.Required(),
 			mcp.Description("Application name as registered in Spinnaker"),

@@ -12,7 +12,7 @@ import (
 
 func NewSaveStrategy(gate *client.GateClient) (mcp.Tool, server.ToolHandlerFunc) {
 	tool := mcp.NewTool("save_strategy",
-		mcp.WithDescription("Save a new deployment strategy configuration to Spinnaker"),
+		mcp.WithDescription("Save a new deployment strategy configuration to Spinnaker. Use this to create a reusable deployment strategy (e.g., red/black, rolling push, canary) — use delete_strategy to remove one. Accepts a full strategy JSON definition and returns a confirmation."),
 		mcp.WithString("strategy_json",
 			mcp.Required(),
 			mcp.Description("Full strategy JSON definition"),

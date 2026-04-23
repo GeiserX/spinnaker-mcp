@@ -11,7 +11,7 @@ import (
 
 func NewGetImageTags(gate *client.GateClient) (mcp.Tool, server.ToolHandlerFunc) {
 	tool := mcp.NewTool("get_image_tags",
-		mcp.WithDescription("Get tags for a Docker image repository in Spinnaker"),
+		mcp.WithDescription("Get available tags for a Docker image repository registered in Spinnaker. Use this to list version tags before triggering a pipeline with a specific image tag. Returns JSON array of tag strings for the specified repository."),
 		mcp.WithString("account",
 			mcp.Required(),
 			mcp.Description("Spinnaker account name"),

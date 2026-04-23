@@ -11,7 +11,7 @@ import (
 
 func NewGetCluster(gate *client.GateClient) (mcp.Tool, server.ToolHandlerFunc) {
 	tool := mcp.NewTool("get_cluster",
-		mcp.WithDescription("Get details for a specific cluster in a Spinnaker application"),
+		mcp.WithDescription("Get details for a specific cluster in a Spinnaker application by account and cluster name. Use this to inspect server groups, load balancers, and instance counts within a cluster. Returns JSON with cluster metadata and its constituent server groups."),
 		mcp.WithString("application",
 			mcp.Required(),
 			mcp.Description("Application name as registered in Spinnaker"),
@@ -22,7 +22,7 @@ func NewGetCluster(gate *client.GateClient) (mcp.Tool, server.ToolHandlerFunc) {
 		),
 		mcp.WithString("cluster_name",
 			mcp.Required(),
-			mcp.Description("Cluster name"),
+			mcp.Description("Cluster name as shown in the Spinnaker UI"),
 		),
 		readOnly(),
 	)

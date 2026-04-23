@@ -11,7 +11,7 @@ import (
 
 func NewListApplications(gate *client.GateClient) (mcp.Tool, server.ToolHandlerFunc) {
 	tool := mcp.NewTool("list_applications",
-		mcp.WithDescription("List all Spinnaker applications with their metadata"),
+		mcp.WithDescription("List all Spinnaker applications with their metadata. Use this as a starting point to discover available applications before querying pipelines or infrastructure. Returns JSON array of application objects with name, email, accounts, and cloud providers."),
 		readOnly(),
 	)
 

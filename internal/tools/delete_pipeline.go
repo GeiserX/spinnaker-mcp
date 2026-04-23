@@ -11,7 +11,7 @@ import (
 
 func NewDeletePipeline(gate *client.GateClient) (mcp.Tool, server.ToolHandlerFunc) {
 	tool := mcp.NewTool("delete_pipeline",
-		mcp.WithDescription("Delete a pipeline configuration from Spinnaker"),
+		mcp.WithDescription("Permanently delete a pipeline configuration from Spinnaker. Use this only when a pipeline is no longer needed — this action cannot be undone. Does not affect past executions. Returns a confirmation message on success."),
 		mcp.WithString("application",
 			mcp.Required(),
 			mcp.Description("Application name as registered in Spinnaker"),

@@ -11,7 +11,7 @@ import (
 
 func NewDeleteStrategy(gate *client.GateClient) (mcp.Tool, server.ToolHandlerFunc) {
 	tool := mcp.NewTool("delete_strategy",
-		mcp.WithDescription("Delete a deployment strategy configuration from Spinnaker"),
+		mcp.WithDescription("Permanently delete a deployment strategy configuration from Spinnaker. Use this only when a strategy is no longer needed — this action cannot be undone. Returns a confirmation message on success."),
 		mcp.WithString("application",
 			mcp.Required(),
 			mcp.Description("Application name as registered in Spinnaker"),

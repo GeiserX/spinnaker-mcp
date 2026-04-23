@@ -11,7 +11,7 @@ import (
 
 func NewFindImages(gate *client.GateClient) (mcp.Tool, server.ToolHandlerFunc) {
 	tool := mcp.NewTool("find_images",
-		mcp.WithDescription("Find images/AMIs available in Spinnaker for a given cloud provider"),
+		mcp.WithDescription("Search for machine images (AMIs, GCE images, Docker images) available in Spinnaker for a given cloud provider. Use this to find images for a deployment or verify which image versions are available. Supports filtering by query string, region, and account. Returns JSON array of matching image objects."),
 		mcp.WithString("provider",
 			mcp.Required(),
 			mcp.Description("Cloud provider (e.g. aws, gce, docker)"),

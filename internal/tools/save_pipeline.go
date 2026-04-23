@@ -12,7 +12,7 @@ import (
 
 func NewSavePipeline(gate *client.GateClient) (mcp.Tool, server.ToolHandlerFunc) {
 	tool := mcp.NewTool("save_pipeline",
-		mcp.WithDescription("Save a new pipeline configuration to Spinnaker"),
+		mcp.WithDescription("Save a new pipeline configuration to Spinnaker. Use this to create a brand-new pipeline definition — use update_pipeline instead to modify an existing one. Accepts a full pipeline JSON definition and returns a confirmation. This is a mutating operation that creates a new pipeline visible in the Spinnaker UI."),
 		mcp.WithString("pipeline_json",
 			mcp.Required(),
 			mcp.Description("Full pipeline JSON definition"),

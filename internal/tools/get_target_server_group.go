@@ -11,7 +11,7 @@ import (
 
 func NewGetTargetServerGroup(gate *client.GateClient) (mcp.Tool, server.ToolHandlerFunc) {
 	tool := mcp.NewTool("get_target_server_group",
-		mcp.WithDescription("Get a target server group in a Spinnaker cluster by selection strategy"),
+		mcp.WithDescription("Get a specific server group in a Spinnaker cluster using a target selection strategy (e.g., newest, oldest, largest, smallest, fail). Use this when you need the most recently deployed or a specific server group without knowing its exact name. Returns JSON with the matched server group details."),
 		mcp.WithString("application",
 			mcp.Required(),
 			mcp.Description("Application name as registered in Spinnaker"),
@@ -22,7 +22,7 @@ func NewGetTargetServerGroup(gate *client.GateClient) (mcp.Tool, server.ToolHand
 		),
 		mcp.WithString("cluster_name",
 			mcp.Required(),
-			mcp.Description("Cluster name"),
+			mcp.Description("Cluster name as shown in the Spinnaker UI"),
 		),
 		mcp.WithString("cloud_provider",
 			mcp.Required(),

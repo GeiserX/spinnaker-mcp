@@ -11,7 +11,7 @@ import (
 
 func NewGetPipelineHistory(gate *client.GateClient) (mcp.Tool, server.ToolHandlerFunc) {
 	tool := mcp.NewTool("get_pipeline_history",
-		mcp.WithDescription("Get the version history of a pipeline configuration"),
+		mcp.WithDescription("Get the version history of a pipeline configuration showing past revisions. Use this to audit changes to a pipeline or compare previous configurations. Returns JSON array of historical pipeline versions ordered by update time."),
 		mcp.WithString("pipeline_config_id",
 			mcp.Required(),
 			mcp.Description("Pipeline configuration ID"),

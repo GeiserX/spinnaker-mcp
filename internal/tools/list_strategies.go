@@ -11,7 +11,7 @@ import (
 
 func NewListStrategies(gate *client.GateClient) (mcp.Tool, server.ToolHandlerFunc) {
 	tool := mcp.NewTool("list_strategies",
-		mcp.WithDescription("List all deployment strategies configured for a Spinnaker application"),
+		mcp.WithDescription("List all deployment strategy configurations for a Spinnaker application. Use this to discover available strategies (e.g., red/black, rolling, canary) before saving or modifying one. Returns JSON array of strategy configuration objects."),
 		mcp.WithString("application",
 			mcp.Required(),
 			mcp.Description("Application name as registered in Spinnaker"),

@@ -11,7 +11,7 @@ import (
 
 func NewCancelExecution(gate *client.GateClient) (mcp.Tool, server.ToolHandlerFunc) {
 	tool := mcp.NewTool("cancel_execution",
-		mcp.WithDescription("Cancel a running pipeline execution"),
+		mcp.WithDescription("Cancel a running pipeline execution by its ID, optionally providing a reason. Use this to stop a deployment in progress — for example, when a bad build was triggered. Does not roll back completed stages. Returns a confirmation message."),
 		mcp.WithString("execution_id",
 			mcp.Required(),
 			mcp.Description("Pipeline execution ID to cancel"),

@@ -10,7 +10,7 @@ import (
 
 func NewListFirewalls(gate *client.GateClient) (mcp.Tool, server.ToolHandlerFunc) {
 	tool := mcp.NewTool("list_firewalls",
-		mcp.WithDescription("List all firewall rules (security groups) across all Spinnaker accounts"),
+		mcp.WithDescription("List all firewall rules (security groups) across all Spinnaker accounts and regions. Use this to audit network security posture or find a specific security group before inspecting it with get_firewall. Returns JSON array of firewall objects grouped by account and region."),
 		readOnly(),
 	)
 
