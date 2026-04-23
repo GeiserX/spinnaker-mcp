@@ -33,7 +33,7 @@ func NewListExecutions(gate *client.GateClient) (mcp.Tool, server.ToolHandlerFun
 		limit := req.GetInt("limit", 25)
 		statuses := req.GetString("statuses", "")
 
-		resp, err := gate.ListExecutions(app, limit, statuses)
+		resp, err := gate.ListExecutions(ctx, app, limit, statuses)
 		if err != nil {
 			return mcp.NewToolResultError(err.Error()), nil
 		}

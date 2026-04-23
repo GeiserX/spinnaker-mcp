@@ -15,7 +15,7 @@ func NewListApplications(gate *client.GateClient) (mcp.Tool, server.ToolHandlerF
 	)
 
 	handler := func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		resp, err := gate.ListApplications()
+		resp, err := gate.ListApplications(ctx)
 		if err != nil {
 			return mcp.NewToolResultError(err.Error()), nil
 		}

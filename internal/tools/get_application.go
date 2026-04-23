@@ -24,7 +24,7 @@ func NewGetApplication(gate *client.GateClient) (mcp.Tool, server.ToolHandlerFun
 			return mcp.NewToolResultError(err.Error()), nil
 		}
 
-		resp, err := gate.GetApplication(app)
+		resp, err := gate.GetApplication(ctx, app)
 		if err != nil {
 			return mcp.NewToolResultError(err.Error()), nil
 		}

@@ -24,7 +24,7 @@ func NewListServerGroups(gate *client.GateClient) (mcp.Tool, server.ToolHandlerF
 			return mcp.NewToolResultError(err.Error()), nil
 		}
 
-		resp, err := gate.ListServerGroups(app)
+		resp, err := gate.ListServerGroups(ctx, app)
 		if err != nil {
 			return mcp.NewToolResultError(err.Error()), nil
 		}

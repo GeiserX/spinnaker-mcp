@@ -1,0 +1,17 @@
+server
+bin/
+dist/
+node_modules/
+.env
+.git
+.omc/
+*.md
+!README.md
+docs/
+.coderabbit.yaml
+.ghost-portfolio.yml
+glama.json
+server.json
+package.json
+postinstall.js
+run.js

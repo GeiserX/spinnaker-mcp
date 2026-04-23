@@ -21,10 +21,21 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.24'
+          go-version-file: go.mod
+
+      - name: Build
+        run: go build ./cmd/server
+
+      - name: Vet
+        run: go vet ./...
 
       - name: Run tests
         run: go test -v -race -coverprofile=coverage.out ./...
+
+      - name: Verify go.mod is tidy
+        run: |
+          go mod tidy
+          git diff --exit-code go.mod go.sum
 
       - name: Upload coverage
         if: always()

@@ -32,7 +32,7 @@ func NewGetPipeline(gate *client.GateClient) (mcp.Tool, server.ToolHandlerFunc) 
 			return mcp.NewToolResultError(err.Error()), nil
 		}
 
-		resp, err := gate.GetPipelineConfig(app, name)
+		resp, err := gate.GetPipelineConfig(ctx, app, name)
 		if err != nil {
 			return mcp.NewToolResultError(err.Error()), nil
 		}

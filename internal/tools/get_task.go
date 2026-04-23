@@ -24,7 +24,7 @@ func NewGetTask(gate *client.GateClient) (mcp.Tool, server.ToolHandlerFunc) {
 			return mcp.NewToolResultError(err.Error()), nil
 		}
 
-		resp, err := gate.GetTask(id)
+		resp, err := gate.GetTask(ctx, id)
 		if err != nil {
 			return mcp.NewToolResultError(err.Error()), nil
 		}

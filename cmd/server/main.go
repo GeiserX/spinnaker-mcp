@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/geiserx/spinnaker-mcp/client"
@@ -17,11 +18,22 @@ func main() {
 	log.Printf("Spinnaker MCP %s starting…", version.String())
 
 	cfg := config.LoadGateConfig()
-	gate := client.NewGate(cfg.BaseURL, cfg.Token, cfg.User, cfg.Pass, cfg.CertFile, cfg.KeyFile, cfg.Insecure)
+	gate, err := client.NewGate(client.GateOptions{
+		BaseURL:  cfg.BaseURL,
+		Token:    cfg.Token,
+		User:     cfg.User,
+		Pass:     cfg.Pass,
+		CertFile: cfg.CertFile,
+		KeyFile:  cfg.KeyFile,
+		Insecure: cfg.Insecure,
+	})
+	if err != nil {
+		log.Fatalf("Failed to create Gate client: %v", err)
+	}
 
 	s := server.NewMCPServer(
 		"Spinnaker MCP",
-		"0.0.1",
+		version.Version,
 		server.WithToolCapabilities(true),
 		server.WithRecovery(),
 	)
@@ -78,9 +90,17 @@ func main() {
 			log.Fatalf("stdio server error: %v", err)
 		}
 	} else {
+		portStr := os.Getenv("MCP_PORT")
+		if portStr == "" {
+			portStr = "8085"
+		}
+		p, err := strconv.Atoi(portStr)
+		if err != nil || p < 1 || p > 65535 {
+			log.Fatalf("Invalid MCP_PORT %q: must be 1-65535", portStr)
+		}
 		httpSrv := server.NewStreamableHTTPServer(s)
-		log.Println("Spinnaker MCP listening on :8084")
-		if err := httpSrv.Start(":8084"); err != nil {
+		log.Printf("Spinnaker MCP listening on :%s", portStr)
+		if err := httpSrv.Start(":" + portStr); err != nil {
 			log.Fatalf("server error: %v", err)
 		}
 	}

@@ -29,7 +29,7 @@ func NewCancelExecution(gate *client.GateClient) (mcp.Tool, server.ToolHandlerFu
 
 		reason := req.GetString("reason", "")
 
-		resp, err := gate.CancelExecution(id, reason)
+		resp, err := gate.CancelExecution(ctx, id, reason)
 		if err != nil {
 			return mcp.NewToolResultError(err.Error()), nil
 		}
