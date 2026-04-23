@@ -16,6 +16,7 @@ func NewGetExecution(gate *client.GateClient) (mcp.Tool, server.ToolHandlerFunc)
 			mcp.Required(),
 			mcp.Description("Pipeline execution ID (UUID returned when triggering or from list_executions)"),
 		),
+		readOnly(),
 	)
 
 	handler := func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {

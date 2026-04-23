@@ -19,6 +19,7 @@ func NewCancelExecution(gate *client.GateClient) (mcp.Tool, server.ToolHandlerFu
 		mcp.WithString("reason",
 			mcp.Description("Human-readable reason for cancellation"),
 		),
+		destructive(),
 	)
 
 	handler := func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {

@@ -36,6 +36,7 @@ func NewGetTargetServerGroup(gate *client.GateClient) (mcp.Tool, server.ToolHand
 			mcp.Required(),
 			mcp.Description("Target type: newest, oldest, largest, smallest, or ancestor"),
 		),
+		readOnly(),
 	)
 
 	validTargets := map[string]bool{

@@ -16,6 +16,7 @@ func NewPauseExecution(gate *client.GateClient) (mcp.Tool, server.ToolHandlerFun
 			mcp.Required(),
 			mcp.Description("Pipeline execution ID to pause"),
 		),
+		mutating(),
 	)
 
 	handler := func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {

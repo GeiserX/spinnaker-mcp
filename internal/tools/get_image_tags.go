@@ -20,6 +20,7 @@ func NewGetImageTags(gate *client.GateClient) (mcp.Tool, server.ToolHandlerFunc)
 			mcp.Required(),
 			mcp.Description("Docker image repository (e.g. library/nginx)"),
 		),
+		readOnly(),
 	)
 
 	handler := func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {

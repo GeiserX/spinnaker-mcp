@@ -27,6 +27,7 @@ func NewGetConsoleOutput(gate *client.GateClient) (mcp.Tool, server.ToolHandlerF
 		mcp.WithString("provider",
 			mcp.Description("Cloud provider (e.g. aws, gce, kubernetes)"),
 		),
+		readOnly(),
 	)
 
 	handler := func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {

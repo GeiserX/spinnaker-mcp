@@ -21,6 +21,7 @@ func NewUpdatePipeline(gate *client.GateClient) (mcp.Tool, server.ToolHandlerFun
 			mcp.Required(),
 			mcp.Description("Updated pipeline JSON definition"),
 		),
+		mutating(),
 	)
 
 	handler := func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {

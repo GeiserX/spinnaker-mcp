@@ -20,6 +20,7 @@ func NewGetPipeline(gate *client.GateClient) (mcp.Tool, server.ToolHandlerFunc) 
 			mcp.Required(),
 			mcp.Description("Pipeline name as shown in the Spinnaker UI"),
 		),
+		readOnly(),
 	)
 
 	handler := func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {

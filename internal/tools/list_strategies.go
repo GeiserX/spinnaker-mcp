@@ -16,6 +16,7 @@ func NewListStrategies(gate *client.GateClient) (mcp.Tool, server.ToolHandlerFun
 			mcp.Required(),
 			mcp.Description("Application name as registered in Spinnaker"),
 		),
+		readOnly(),
 	)
 
 	handler := func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {

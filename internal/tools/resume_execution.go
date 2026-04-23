@@ -16,6 +16,7 @@ func NewResumeExecution(gate *client.GateClient) (mcp.Tool, server.ToolHandlerFu
 			mcp.Required(),
 			mcp.Description("Pipeline execution ID to resume"),
 		),
+		mutating(),
 	)
 
 	handler := func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {

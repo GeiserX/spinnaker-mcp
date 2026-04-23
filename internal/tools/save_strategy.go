@@ -17,6 +17,7 @@ func NewSaveStrategy(gate *client.GateClient) (mcp.Tool, server.ToolHandlerFunc)
 			mcp.Required(),
 			mcp.Description("Full strategy JSON definition"),
 		),
+		mutating(),
 	)
 
 	handler := func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {

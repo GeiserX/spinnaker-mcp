@@ -16,6 +16,7 @@ func NewGetTask(gate *client.GateClient) (mcp.Tool, server.ToolHandlerFunc) {
 			mcp.Required(),
 			mcp.Description("Orchestration task ID returned by Spinnaker when an operation is submitted"),
 		),
+		readOnly(),
 	)
 
 	handler := func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {

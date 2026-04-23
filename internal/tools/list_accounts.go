@@ -11,6 +11,7 @@ import (
 func NewListAccounts(gate *client.GateClient) (mcp.Tool, server.ToolHandlerFunc) {
 	tool := mcp.NewTool("list_accounts",
 		mcp.WithDescription("List all configured Spinnaker accounts (cloud provider integrations)"),
+		readOnly(),
 	)
 
 	handler := func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {

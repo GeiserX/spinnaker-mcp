@@ -25,6 +25,7 @@ func NewFindImages(gate *client.GateClient) (mcp.Tool, server.ToolHandlerFunc) {
 		mcp.WithString("account",
 			mcp.Description("Spinnaker account to filter images"),
 		),
+		readOnly(),
 	)
 
 	handler := func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
