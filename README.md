@@ -60,7 +60,7 @@ This downloads the pre-built Go binary for your platform and runs it with stdio 
 ### Docker
 
 ```sh
-docker run --rm -e GATE_URL=http://spin-gate:8084 -e TRANSPORT=stdio drumsergio/spinnaker-mcp:0.1.0
+docker run --rm -e GATE_URL=http://spin-gate:8084 -e TRANSPORT=stdio drumsergio/spinnaker-mcp:0.2.0
 ```
 
 ### Local build
