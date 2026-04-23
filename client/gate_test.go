@@ -5,8 +5,18 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 )
+
+func newTestGate(t *testing.T, url string) *GateClient {
+	t.Helper()
+	g, err := NewGate(GateOptions{BaseURL: url})
+	if err != nil {
+		t.Fatalf("NewGate: %v", err)
+	}
+	return g
+}
 
 func TestNewGate_BearerAuth(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -21,7 +31,7 @@ func TestNewGate_BearerAuth(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	gate, err := NewGate(srv.URL, "test-token", "", "", "", "", false)
+	gate, err := NewGate(GateOptions{BaseURL: srv.URL, Token: "test-token"})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -47,7 +57,7 @@ func TestNewGate_BasicAuth(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	gate, err := NewGate(srv.URL, "", "admin", "secret", "", "", false)
+	gate, err := NewGate(GateOptions{BaseURL: srv.URL, User: "admin", Pass: "secret"})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -70,10 +80,7 @@ func TestNewGate_NoAuth(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	gate, err := NewGate(srv.URL, "", "", "", "", "", false)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	gate := newTestGate(t, srv.URL)
 	resp, err := gate.ListApplications(context.Background())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -90,11 +97,8 @@ func TestGateClient_HTTPError(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	gate, err := NewGate(srv.URL, "", "", "", "", "", false)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	_, err = gate.GetApplication(context.Background(), "nonexistent")
+	gate := newTestGate(t, srv.URL)
+	_, err := gate.GetApplication(context.Background(), "nonexistent")
 	if err == nil {
 		t.Fatal("expected error for 404 response")
 	}
@@ -109,10 +113,7 @@ func TestGateClient_ListPipelines(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	gate, err := NewGate(srv.URL, "", "", "", "", "", false)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	gate := newTestGate(t, srv.URL)
 	resp, err := gate.ListPipelines(context.Background(), "myapp")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -135,10 +136,7 @@ func TestGateClient_TriggerPipeline(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	gate, err := NewGate(srv.URL, "", "", "", "", "", false)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	gate := newTestGate(t, srv.URL)
 	resp, err := gate.TriggerPipeline(context.Background(), "myapp", "deploy", map[string]any{"tag": "v1.0"})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -160,11 +158,8 @@ func TestGateClient_CancelExecution(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	gate, err := NewGate(srv.URL, "", "", "", "", "", false)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	_, err = gate.CancelExecution(context.Background(), "exec-123", "testing")
+	gate := newTestGate(t, srv.URL)
+	_, err := gate.CancelExecution(context.Background(), "exec-123", "testing")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -182,10 +177,7 @@ func TestGateClient_ListExecutions(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	gate, err := NewGate(srv.URL, "", "", "", "", "", false)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	gate := newTestGate(t, srv.URL)
 	resp, err := gate.ListExecutions(context.Background(), "myapp", 10, "RUNNING")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -196,21 +188,25 @@ func TestGateClient_ListExecutions(t *testing.T) {
 }
 
 func TestNewGate_InvalidURL(t *testing.T) {
-	_, err := NewGate("://bad-url", "", "", "", "", "", false)
+	_, err := NewGate(GateOptions{BaseURL: "://bad-url"})
 	if err == nil {
 		t.Fatal("expected error for invalid URL")
 	}
 }
 
 func TestNewGate_InvalidScheme(t *testing.T) {
-	_, err := NewGate("ftp://example.com", "", "", "", "", "", false)
+	_, err := NewGate(GateOptions{BaseURL: "ftp://example.com"})
 	if err == nil {
 		t.Fatal("expected error for non-http scheme")
 	}
 }
 
 func TestNewGate_InvalidCertPath(t *testing.T) {
-	_, err := NewGate("http://localhost:8084", "", "", "", "/nonexistent/cert.pem", "/nonexistent/key.pem", false)
+	_, err := NewGate(GateOptions{
+		BaseURL:  "http://localhost:8084",
+		CertFile: "/nonexistent/cert.pem",
+		KeyFile:  "/nonexistent/key.pem",
+	})
 	if err == nil {
 		t.Fatal("expected error for invalid cert path")
 	}
@@ -225,11 +221,8 @@ func TestGateClient_PutMethod(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	gate, err := NewGate(srv.URL, "", "", "", "", "", false)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	_, err = gate.PauseExecution(context.Background(), "exec-123")
+	gate := newTestGate(t, srv.URL)
+	_, err := gate.PauseExecution(context.Background(), "exec-123")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -244,10 +237,7 @@ func TestGateClient_GetPipelineConfig(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	gate, err := NewGate(srv.URL, "", "", "", "", "", false)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	gate := newTestGate(t, srv.URL)
 	resp, err := gate.GetPipelineConfig(context.Background(), "myapp", "deploy")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -266,10 +256,7 @@ func TestGateClient_GetExecution(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	gate, err := NewGate(srv.URL, "", "", "", "", "", false)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	gate := newTestGate(t, srv.URL)
 	resp, err := gate.GetExecution(context.Background(), "exec-123")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -291,11 +278,8 @@ func TestGateClient_ResumeExecution(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	gate, err := NewGate(srv.URL, "", "", "", "", "", false)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	_, err = gate.ResumeExecution(context.Background(), "exec-123")
+	gate := newTestGate(t, srv.URL)
+	_, err := gate.ResumeExecution(context.Background(), "exec-123")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -310,10 +294,7 @@ func TestGateClient_ListServerGroups(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	gate, err := NewGate(srv.URL, "", "", "", "", "", false)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	gate := newTestGate(t, srv.URL)
 	resp, err := gate.ListServerGroups(context.Background(), "myapp")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -332,10 +313,7 @@ func TestGateClient_ListLoadBalancers(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	gate, err := NewGate(srv.URL, "", "", "", "", "", false)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	gate := newTestGate(t, srv.URL)
 	resp, err := gate.ListLoadBalancers(context.Background(), "myapp")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -354,10 +332,7 @@ func TestGateClient_GetTask(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	gate, err := NewGate(srv.URL, "", "", "", "", "", false)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	gate := newTestGate(t, srv.URL)
 	resp, err := gate.GetTask(context.Background(), "task-456")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -376,11 +351,8 @@ func TestGateClient_CancelExecutionNoReason(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	gate, err := NewGate(srv.URL, "", "", "", "", "", false)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	_, err = gate.CancelExecution(context.Background(), "exec-123", "")
+	gate := newTestGate(t, srv.URL)
+	_, err := gate.CancelExecution(context.Background(), "exec-123", "")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -398,11 +370,8 @@ func TestGateClient_ListExecutionsDefaults(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	gate, err := NewGate(srv.URL, "", "", "", "", "", false)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	_, err = gate.ListExecutions(context.Background(), "myapp", 0, "")
+	gate := newTestGate(t, srv.URL)
+	_, err := gate.ListExecutions(context.Background(), "myapp", 0, "")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -418,10 +387,7 @@ func TestGateClient_TriggerPipelineNoParams(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	gate, err := NewGate(srv.URL, "", "", "", "", "", false)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	gate := newTestGate(t, srv.URL)
 	resp, err := gate.TriggerPipeline(context.Background(), "myapp", "deploy", nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -431,29 +397,109 @@ func TestGateClient_TriggerPipelineNoParams(t *testing.T) {
 	}
 }
 
-func TestGateClient_NoRedirectFollowing(t *testing.T) {
-	var redirectFollowed bool
+func TestGateClient_RedirectReturnsError(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/redirected" {
-			redirectFollowed = true
-			w.Write([]byte(`"redirected"`))
-			return
-		}
 		http.Redirect(w, r, "/redirected", http.StatusFound)
 	}))
 	defer srv.Close()
 
-	gate, err := NewGate(srv.URL, "", "", "", "", "", false)
+	gate := newTestGate(t, srv.URL)
+	_, err := gate.ListApplications(context.Background())
+	if err == nil {
+		t.Fatal("expected error for redirect response")
+	}
+	if !strings.Contains(err.Error(), "redirect") {
+		t.Errorf("expected redirect error, got: %v", err)
+	}
+}
+
+func TestGateClient_ErrorBodyTruncated(t *testing.T) {
+	bigBody := strings.Repeat("x", 1000)
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(500)
+		w.Write([]byte(bigBody))
+	}))
+	defer srv.Close()
+
+	gate := newTestGate(t, srv.URL)
+	_, err := gate.ListApplications(context.Background())
+	if err == nil {
+		t.Fatal("expected error for 500 response")
+	}
+	if !strings.Contains(err.Error(), "(truncated)") {
+		t.Errorf("expected truncated error, got: %v", err)
+	}
+	if len(err.Error()) > 600 {
+		t.Errorf("error too long (%d chars), truncation may have failed", len(err.Error()))
+	}
+}
+
+func TestGateClient_ContextCancellation(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		<-r.Context().Done()
+	}))
+	defer srv.Close()
+
+	gate := newTestGate(t, srv.URL)
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	_, err := gate.ListApplications(ctx)
+	if err == nil {
+		t.Fatal("expected error for cancelled context")
+	}
+}
+
+func TestGateClient_BasePathPreserved(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/api/v1/applications" {
+			t.Errorf("expected /api/v1/applications, got %s", r.URL.Path)
+			w.WriteHeader(404)
+			return
+		}
+		w.Write([]byte(`[]`))
+	}))
+	defer srv.Close()
+
+	gate, err := NewGate(GateOptions{BaseURL: srv.URL + "/api/v1"})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	// The response is a 302 with a body — client should NOT follow it
-	resp, _ := gate.ListApplications(context.Background())
-	if redirectFollowed {
-		t.Error("client followed redirect — CheckRedirect should prevent this")
+	resp, err := gate.ListApplications(context.Background())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
 	}
-	// With ErrUseLastResponse, the 302 body is returned (status < 400)
-	if string(resp) == `"redirected"` {
-		t.Error("got redirected response — client should not follow redirects")
+	if string(resp) != `[]` {
+		t.Errorf("unexpected response: %s", string(resp))
+	}
+}
+
+func TestGateClient_BasePathTrailingSlash(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/api/v1/applications" {
+			t.Errorf("expected /api/v1/applications, got %s", r.URL.Path)
+			w.WriteHeader(404)
+			return
+		}
+		w.Write([]byte(`[]`))
+	}))
+	defer srv.Close()
+
+	gate, err := NewGate(GateOptions{BaseURL: srv.URL + "/api/v1/"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	resp, err := gate.ListApplications(context.Background())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if string(resp) != `[]` {
+		t.Errorf("unexpected response: %s", string(resp))
+	}
+}
+
+func TestNewGate_InsecureNoWarnOnHTTP(t *testing.T) {
+	_, err := NewGate(GateOptions{BaseURL: "http://localhost:8084", Insecure: true})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
 	}
 }

@@ -11,13 +11,14 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 	"time"
 )
 
-const maxResponseSize = 10 << 20 // 10 MB
+const maxResponseSize int64 = 10 << 20 // 10 MB
 
 type GateClient struct {
-	base string
+	base *url.URL
 	hc   *http.Client
 	auth authMethod
 }
@@ -42,46 +43,61 @@ type noAuth struct{}
 
 func (a *noAuth) apply(_ *http.Request) {}
 
-func NewGate(base, token, user, pass, certFile, keyFile string, insecure bool) (*GateClient, error) {
-	u, err := url.Parse(base)
+type GateOptions struct {
+	BaseURL  string
+	Token    string
+	User     string
+	Pass     string
+	CertFile string
+	KeyFile  string
+	Insecure bool
+}
+
+func NewGate(opts GateOptions) (*GateClient, error) {
+	u, err := url.Parse(opts.BaseURL)
 	if err != nil {
-		return nil, fmt.Errorf("invalid GATE_URL %q: %w", base, err)
+		return nil, fmt.Errorf("invalid GATE_URL %q: %w", opts.BaseURL, err)
 	}
 	if u.Scheme != "http" && u.Scheme != "https" {
 		return nil, fmt.Errorf("GATE_URL must use http or https scheme, got %q", u.Scheme)
 	}
+	u.Path = strings.TrimRight(u.Path, "/")
 
-	transport := &http.Transport{}
+	transport := http.DefaultTransport.(*http.Transport).Clone()
 
-	if certFile != "" && keyFile != "" {
-		cert, err := tls.LoadX509KeyPair(certFile, keyFile)
+	if opts.CertFile != "" && opts.KeyFile != "" {
+		cert, err := tls.LoadX509KeyPair(opts.CertFile, opts.KeyFile)
 		if err != nil {
 			return nil, fmt.Errorf("loading x509 cert/key: %w", err)
 		}
 		transport.TLSClientConfig = &tls.Config{
 			Certificates:       []tls.Certificate{cert},
-			InsecureSkipVerify: insecure,
+			InsecureSkipVerify: opts.Insecure,
+			MinVersion:         tls.VersionTLS12,
 		}
-	} else if insecure {
-		transport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+	} else if opts.Insecure {
+		transport.TLSClientConfig = &tls.Config{
+			InsecureSkipVerify: true,
+			MinVersion:         tls.VersionTLS12,
+		}
 	}
 
-	if insecure {
+	if opts.Insecure && u.Scheme == "https" {
 		log.Println("WARNING: TLS certificate verification is disabled (GATE_INSECURE=true)")
 	}
 
 	var auth authMethod
 	switch {
-	case token != "":
-		auth = &bearerAuth{token: token}
-	case user != "":
-		auth = &basicAuth{user: user, pass: pass}
+	case opts.Token != "":
+		auth = &bearerAuth{token: opts.Token}
+	case opts.User != "":
+		auth = &basicAuth{user: opts.User, pass: opts.Pass}
 	default:
 		auth = &noAuth{}
 	}
 
 	return &GateClient{
-		base: base,
+		base: u,
 		hc: &http.Client{
 			Transport: transport,
 			Timeout:   30 * time.Second,
@@ -93,16 +109,13 @@ func NewGate(base, token, user, pass, certFile, keyFile string, insecure bool) (
 	}, nil
 }
 
-func (c *GateClient) buildURL(path string, q url.Values) (string, error) {
-	u, err := url.Parse(c.base)
-	if err != nil {
-		return "", fmt.Errorf("invalid base URL: %w", err)
-	}
-	u.Path = path
+func (c *GateClient) buildURL(path string, q url.Values) string {
+	u := *c.base
+	u.Path += path
 	if q != nil {
 		u.RawQuery = q.Encode()
 	}
-	return u.String(), nil
+	return u.String()
 }
 
 func (c *GateClient) do(req *http.Request) ([]byte, error) {
@@ -113,9 +126,15 @@ func (c *GateClient) do(req *http.Request) ([]byte, error) {
 		return nil, err
 	}
 	defer resp.Body.Close()
-	body, err := io.ReadAll(io.LimitReader(resp.Body, maxResponseSize))
+	body, err := io.ReadAll(io.LimitReader(resp.Body, maxResponseSize+1))
 	if err != nil {
 		return nil, fmt.Errorf("reading response body: %w", err)
+	}
+	if int64(len(body)) > maxResponseSize {
+		return nil, fmt.Errorf("response body exceeds %d bytes", maxResponseSize)
+	}
+	if resp.StatusCode >= 300 && resp.StatusCode < 400 {
+		return nil, fmt.Errorf("gate returned unexpected redirect %d to %q", resp.StatusCode, resp.Header.Get("Location"))
 	}
 	if resp.StatusCode >= 400 {
 		const maxErrBody = 500
@@ -123,16 +142,13 @@ func (c *GateClient) do(req *http.Request) ([]byte, error) {
 		if len(errMsg) > maxErrBody {
 			errMsg = errMsg[:maxErrBody] + "... (truncated)"
 		}
-		return nil, fmt.Errorf("Gate error %d: %s", resp.StatusCode, errMsg)
+		return nil, fmt.Errorf("gate error %d: %s", resp.StatusCode, errMsg)
 	}
 	return body, nil
 }
 
 func (c *GateClient) get(ctx context.Context, path string, q url.Values) ([]byte, error) {
-	u, err := c.buildURL(path, q)
-	if err != nil {
-		return nil, err
-	}
+	u := c.buildURL(path, q)
 	req, err := http.NewRequestWithContext(ctx, "GET", u, nil)
 	if err != nil {
 		return nil, fmt.Errorf("building request: %w", err)
@@ -140,7 +156,7 @@ func (c *GateClient) get(ctx context.Context, path string, q url.Values) ([]byte
 	return c.do(req)
 }
 
-func (c *GateClient) post(ctx context.Context, path string, payload any) ([]byte, error) {
+func (c *GateClient) doWithBody(ctx context.Context, method, path string, payload any) ([]byte, error) {
 	var body io.Reader
 	if payload != nil {
 		b, err := json.Marshal(payload)
@@ -149,11 +165,8 @@ func (c *GateClient) post(ctx context.Context, path string, payload any) ([]byte
 		}
 		body = bytes.NewReader(b)
 	}
-	u, err := c.buildURL(path, nil)
-	if err != nil {
-		return nil, err
-	}
-	req, err := http.NewRequestWithContext(ctx, "POST", u, body)
+	u := c.buildURL(path, nil)
+	req, err := http.NewRequestWithContext(ctx, method, u, body)
 	if err != nil {
 		return nil, fmt.Errorf("building request: %w", err)
 	}
@@ -163,27 +176,12 @@ func (c *GateClient) post(ctx context.Context, path string, payload any) ([]byte
 	return c.do(req)
 }
 
+func (c *GateClient) post(ctx context.Context, path string, payload any) ([]byte, error) {
+	return c.doWithBody(ctx, "POST", path, payload)
+}
+
 func (c *GateClient) put(ctx context.Context, path string, payload any) ([]byte, error) {
-	var body io.Reader
-	if payload != nil {
-		b, err := json.Marshal(payload)
-		if err != nil {
-			return nil, fmt.Errorf("marshaling request body: %w", err)
-		}
-		body = bytes.NewReader(b)
-	}
-	u, err := c.buildURL(path, nil)
-	if err != nil {
-		return nil, err
-	}
-	req, err := http.NewRequestWithContext(ctx, "PUT", u, body)
-	if err != nil {
-		return nil, fmt.Errorf("building request: %w", err)
-	}
-	if payload != nil {
-		req.Header.Set("Content-Type", "application/json")
-	}
-	return c.do(req)
+	return c.doWithBody(ctx, "PUT", path, payload)
 }
 
 // --- Applications ---
@@ -238,10 +236,7 @@ func (c *GateClient) CancelExecution(ctx context.Context, executionID, reason st
 	if reason != "" {
 		q = url.Values{"reason": {reason}}
 	}
-	u, err := c.buildURL(fmt.Sprintf("/pipelines/%s/cancel", url.PathEscape(executionID)), q)
-	if err != nil {
-		return nil, err
-	}
+	u := c.buildURL(fmt.Sprintf("/pipelines/%s/cancel", url.PathEscape(executionID)), q)
 	req, err := http.NewRequestWithContext(ctx, "PUT", u, nil)
 	if err != nil {
 		return nil, fmt.Errorf("building request: %w", err)
