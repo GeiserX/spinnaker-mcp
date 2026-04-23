@@ -16,8 +16,8 @@ import (
 )
 
 func main() {
-	if len(os.Args) > 1 {
-		switch os.Args[1] {
+	for _, arg := range os.Args[1:] {
+		switch arg {
 		case "--version", "-v":
 			fmt.Println("spinnaker-mcp " + version.String())
 			return
@@ -39,6 +39,11 @@ func main() {
 			fmt.Println("  MCP_PORT       HTTP listen port (default: 8085)")
 			fmt.Println("  MCP_BIND_ADDR  HTTP bind address (default: 127.0.0.1)")
 			return
+		default:
+			if strings.HasPrefix(arg, "-") {
+				fmt.Fprintf(os.Stderr, "unknown flag: %s\nRun 'spinnaker-mcp --help' for usage.\n", arg)
+				os.Exit(1)
+			}
 		}
 	}
 
