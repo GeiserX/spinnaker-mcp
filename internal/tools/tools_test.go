@@ -426,9 +426,43 @@ func TestSavePipeline_EmptyResponse(t *testing.T) {
 	})
 	_, handler := tools.NewSavePipeline(gate)
 	result, err := handler(context.Background(), makeRequest(map[string]any{
-		"pipeline_json": `{"name":"deploy"}`,
+		"pipeline_json": `{"name":"deploy","application":"myapp"}`,
 	}))
 	assertNoError(t, result, err)
+}
+
+func TestSavePipeline_MissingApplication(t *testing.T) {
+	gate := newGate(t, func(w http.ResponseWriter, r *http.Request) {
+		t.Fatal("gate should not be called")
+	})
+	_, handler := tools.NewSavePipeline(gate)
+	result, err := handler(context.Background(), makeRequest(map[string]any{
+		"pipeline_json": `{"name":"deploy"}`,
+	}))
+	assertToolError(t, result, err)
+}
+
+func TestSavePipeline_MissingName(t *testing.T) {
+	gate := newGate(t, func(w http.ResponseWriter, r *http.Request) {
+		t.Fatal("gate should not be called")
+	})
+	_, handler := tools.NewSavePipeline(gate)
+	result, err := handler(context.Background(), makeRequest(map[string]any{
+		"pipeline_json": `{"application":"myapp"}`,
+	}))
+	assertToolError(t, result, err)
+}
+
+func TestSavePipeline_OversizedJSON(t *testing.T) {
+	gate := newGate(t, func(w http.ResponseWriter, r *http.Request) {
+		t.Fatal("gate should not be called")
+	})
+	_, handler := tools.NewSavePipeline(gate)
+	bigJSON := `{"name":"x","application":"a","data":"` + string(make([]byte, 1<<20)) + `"}`
+	result, err := handler(context.Background(), makeRequest(map[string]any{
+		"pipeline_json": bigJSON,
+	}))
+	assertToolError(t, result, err)
 }
 
 func TestSavePipeline_MissingParam(t *testing.T) {
@@ -712,6 +746,30 @@ func TestEvaluateExpression_MissingExpression(t *testing.T) {
 	assertToolError(t, result, err)
 }
 
+func TestEvaluateExpression_UnsafeSpEL(t *testing.T) {
+	gate := newGate(t, func(w http.ResponseWriter, r *http.Request) {
+		t.Fatal("gate should not be called")
+	})
+	_, handler := tools.NewEvaluateExpression(gate)
+	result, err := handler(context.Background(), makeRequest(map[string]any{
+		"execution_id": "e1",
+		"expression":   "T(java.lang.Runtime).getRuntime().exec('whoami')",
+	}))
+	assertToolError(t, result, err)
+}
+
+func TestEvaluateExpression_OversizedExpression(t *testing.T) {
+	gate := newGate(t, func(w http.ResponseWriter, r *http.Request) {
+		t.Fatal("gate should not be called")
+	})
+	_, handler := tools.NewEvaluateExpression(gate)
+	result, err := handler(context.Background(), makeRequest(map[string]any{
+		"execution_id": "e1",
+		"expression":   string(make([]byte, 4097)),
+	}))
+	assertToolError(t, result, err)
+}
+
 // --- ListStrategies ---
 
 func TestListStrategies_Happy(t *testing.T) {
@@ -964,27 +1022,30 @@ func TestGetTargetServerGroup_Happy(t *testing.T) {
 	})
 	_, handler := tools.NewGetTargetServerGroup(gate)
 	result, err := handler(context.Background(), makeRequest(map[string]any{
-		"application":  "myapp",
-		"account":      "prod",
-		"cluster_name": "cluster-1",
-		"target":       "newest",
+		"application":    "myapp",
+		"account":        "prod",
+		"cluster_name":   "cluster-1",
+		"cloud_provider": "aws",
+		"scope":          "us-east-1",
+		"target":         "newest",
 	}))
 	assertNoError(t, result, err)
 }
 
-func TestGetTargetServerGroup_WithCloudProvider(t *testing.T) {
+func TestGetTargetServerGroup_InvalidTarget(t *testing.T) {
 	gate := newGate(t, func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte(`{"name":"sg-oldest"}`))
+		t.Fatal("gate should not be called")
 	})
 	_, handler := tools.NewGetTargetServerGroup(gate)
 	result, err := handler(context.Background(), makeRequest(map[string]any{
 		"application":    "myapp",
 		"account":        "prod",
 		"cluster_name":   "cluster-1",
-		"target":         "oldest",
 		"cloud_provider": "aws",
+		"scope":          "us-east-1",
+		"target":         "invalid",
 	}))
-	assertNoError(t, result, err)
+	assertToolError(t, result, err)
 }
 
 func TestGetTargetServerGroup_MissingApplication(t *testing.T) {
@@ -993,9 +1054,11 @@ func TestGetTargetServerGroup_MissingApplication(t *testing.T) {
 	})
 	_, handler := tools.NewGetTargetServerGroup(gate)
 	result, err := handler(context.Background(), makeRequest(map[string]any{
-		"account":      "prod",
-		"cluster_name": "cluster-1",
-		"target":       "newest",
+		"account":        "prod",
+		"cluster_name":   "cluster-1",
+		"cloud_provider": "aws",
+		"scope":          "us-east-1",
+		"target":         "newest",
 	}))
 	assertToolError(t, result, err)
 }
@@ -1006,9 +1069,11 @@ func TestGetTargetServerGroup_MissingTarget(t *testing.T) {
 	})
 	_, handler := tools.NewGetTargetServerGroup(gate)
 	result, err := handler(context.Background(), makeRequest(map[string]any{
-		"application":  "myapp",
-		"account":      "prod",
-		"cluster_name": "cluster-1",
+		"application":    "myapp",
+		"account":        "prod",
+		"cluster_name":   "cluster-1",
+		"cloud_provider": "aws",
+		"scope":          "us-east-1",
 	}))
 	assertToolError(t, result, err)
 }
@@ -1289,8 +1354,19 @@ func TestListSubnets_Happy(t *testing.T) {
 		w.Write([]byte(`[{"id":"subnet-1"}]`))
 	})
 	_, handler := tools.NewListSubnets(gate)
-	result, err := handler(context.Background(), makeRequest(nil))
+	result, err := handler(context.Background(), makeRequest(map[string]any{
+		"cloud_provider": "aws",
+	}))
 	assertNoError(t, result, err)
+}
+
+func TestListSubnets_MissingParam(t *testing.T) {
+	gate := newGate(t, func(w http.ResponseWriter, r *http.Request) {
+		t.Fatal("gate should not be called")
+	})
+	_, handler := tools.NewListSubnets(gate)
+	result, err := handler(context.Background(), makeRequest(nil))
+	assertToolError(t, result, err)
 }
 
 func TestListSubnets_GateError(t *testing.T) {
@@ -1299,7 +1375,9 @@ func TestListSubnets_GateError(t *testing.T) {
 		w.Write([]byte(`error`))
 	})
 	_, handler := tools.NewListSubnets(gate)
-	result, err := handler(context.Background(), makeRequest(nil))
+	result, err := handler(context.Background(), makeRequest(map[string]any{
+		"cloud_provider": "aws",
+	}))
 	assertToolError(t, result, err)
 }
 

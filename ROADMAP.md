@@ -34,7 +34,7 @@ Complete coverage of pipeline CRUD and execution management.
 
 - [x] `restart_stage` — Restart a failed stage within an execution (`PUT /pipelines/{id}/stages/{stageId}/restart`)
 - [x] `search_executions` — Rich search across executions by trigger type, time range, status, event ID (`GET /applications/{app}/executions/search`)
-- [x] `evaluate_expression` — Evaluate a SpEL pipeline expression against an execution context (`POST /pipelines/{id}/evaluate/{expression}`)
+- [x] `evaluate_expression` — Evaluate a SpEL pipeline expression against an execution context (`POST /pipelines/{id}/evaluateExpression`)
 
 ### Strategy Management
 

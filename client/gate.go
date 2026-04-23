@@ -342,13 +342,10 @@ func (c *GateClient) GetScalingActivities(ctx context.Context, app, account, clu
 		url.PathEscape(app), url.PathEscape(account), url.PathEscape(cluster), url.PathEscape(serverGroupName)), q)
 }
 
-func (c *GateClient) GetTargetServerGroup(ctx context.Context, app, account, cluster, target, cloudProvider string) ([]byte, error) {
-	q := url.Values{}
-	if cloudProvider != "" {
-		q.Set("cloudProvider", cloudProvider)
-	}
-	return c.get(ctx, fmt.Sprintf("/applications/%s/clusters/%s/%s/%s",
-		url.PathEscape(app), url.PathEscape(account), url.PathEscape(cluster), url.PathEscape(target)), q)
+func (c *GateClient) GetTargetServerGroup(ctx context.Context, app, account, cluster, cloudProvider, scope, target string) ([]byte, error) {
+	return c.get(ctx, fmt.Sprintf("/applications/%s/clusters/%s/%s/%s/%s/serverGroups/target/%s",
+		url.PathEscape(app), url.PathEscape(account), url.PathEscape(cluster),
+		url.PathEscape(cloudProvider), url.PathEscape(scope), url.PathEscape(target)), nil)
 }
 
 // --- Security Groups / Firewalls ---
@@ -380,14 +377,14 @@ func (c *GateClient) GetConsoleOutput(ctx context.Context, account, region, inst
 
 // --- Images ---
 
-func (c *GateClient) FindImages(ctx context.Context, provider string, params map[string]string) ([]byte, error) {
+func (c *GateClient) FindImages(ctx context.Context, params map[string]string) ([]byte, error) {
 	q := url.Values{}
 	for k, v := range params {
 		if v != "" {
 			q.Set(k, v)
 		}
 	}
-	return c.get(ctx, fmt.Sprintf("/images/%s", url.PathEscape(provider)), q)
+	return c.get(ctx, "/images/find", q)
 }
 
 func (c *GateClient) GetImageTags(ctx context.Context, account, repository string) ([]byte, error) {
@@ -403,8 +400,8 @@ func (c *GateClient) ListNetworks(ctx context.Context) ([]byte, error) {
 	return c.get(ctx, "/networks", nil)
 }
 
-func (c *GateClient) ListSubnets(ctx context.Context) ([]byte, error) {
-	return c.get(ctx, "/subnets", nil)
+func (c *GateClient) ListSubnets(ctx context.Context, cloudProvider string) ([]byte, error) {
+	return c.get(ctx, fmt.Sprintf("/subnets/%s", url.PathEscape(cloudProvider)), nil)
 }
 
 // --- Credentials / Accounts ---

@@ -25,9 +25,21 @@ func NewSavePipeline(gate *client.GateClient) (mcp.Tool, server.ToolHandlerFunc)
 			return mcp.NewToolResultError(err.Error()), nil
 		}
 
+		const maxPipelineSize = 1 << 20 // 1 MB
+		if len(raw) > maxPipelineSize {
+			return mcp.NewToolResultError(fmt.Sprintf("pipeline JSON exceeds maximum size of %d bytes", maxPipelineSize)), nil
+		}
+
 		var pipeline map[string]any
 		if err := json.Unmarshal([]byte(raw), &pipeline); err != nil {
 			return mcp.NewToolResultError(fmt.Sprintf("invalid pipeline JSON: %v", err)), nil
+		}
+
+		if _, ok := pipeline["application"].(string); !ok {
+			return mcp.NewToolResultError("pipeline JSON must include an 'application' string field"), nil
+		}
+		if _, ok := pipeline["name"].(string); !ok {
+			return mcp.NewToolResultError("pipeline JSON must include a 'name' string field"), nil
 		}
 
 		resp, err := gate.SavePipeline(ctx, pipeline)

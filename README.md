@@ -84,7 +84,7 @@ This downloads the pre-built Go binary for your platform and runs it with stdio 
 ### Docker
 
 ```sh
-docker run --rm -e GATE_URL=http://spin-gate:8084 -e TRANSPORT=stdio drumsergio/spinnaker-mcp:0.2.0
+docker run --rm -e GATE_URL=http://spin-gate:8084 -e TRANSPORT=stdio drumsergio/spinnaker-mcp:0.3.0
 ```
 
 ### Local build
@@ -110,6 +110,8 @@ go run ./cmd/server
 | `GATE_KEY_FILE` | _(empty)_ | Path to x509 client key (PEM) |
 | `GATE_INSECURE` | `false` | Skip TLS certificate verification |
 | `TRANSPORT` | _(empty = HTTP)_ | Set to `stdio` for stdio transport |
+| `MCP_PORT` | `8085` | HTTP transport port (ignored when TRANSPORT=stdio) |
+| `MCP_BIND_ADDR` | `127.0.0.1` | HTTP transport bind address (set to `0.0.0.0` to listen on all interfaces) |
 
 **Authentication priority**: Bearer token > Basic auth > x509 client cert > No auth.
 

@@ -24,14 +24,23 @@ func NewGetTargetServerGroup(gate *client.GateClient) (mcp.Tool, server.ToolHand
 			mcp.Required(),
 			mcp.Description("Cluster name"),
 		),
+		mcp.WithString("cloud_provider",
+			mcp.Required(),
+			mcp.Description("Cloud provider (e.g. aws, gce, kubernetes)"),
+		),
+		mcp.WithString("scope",
+			mcp.Required(),
+			mcp.Description("Scope for target lookup (e.g. a region like us-east-1)"),
+		),
 		mcp.WithString("target",
 			mcp.Required(),
 			mcp.Description("Target type: newest, oldest, largest, smallest, or ancestor"),
 		),
-		mcp.WithString("cloud_provider",
-			mcp.Description("Cloud provider (e.g. aws, gce, kubernetes)"),
-		),
 	)
+
+	validTargets := map[string]bool{
+		"newest": true, "oldest": true, "largest": true, "smallest": true, "ancestor": true,
+	}
 
 	handler := func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		app, err := req.RequireString("application")
@@ -46,13 +55,24 @@ func NewGetTargetServerGroup(gate *client.GateClient) (mcp.Tool, server.ToolHand
 		if err != nil {
 			return mcp.NewToolResultError(err.Error()), nil
 		}
+		cloudProvider, err := req.RequireString("cloud_provider")
+		if err != nil {
+			return mcp.NewToolResultError(err.Error()), nil
+		}
+		scope, err := req.RequireString("scope")
+		if err != nil {
+			return mcp.NewToolResultError(err.Error()), nil
+		}
 		target, err := req.RequireString("target")
 		if err != nil {
 			return mcp.NewToolResultError(err.Error()), nil
 		}
-		cloudProvider := req.GetString("cloud_provider", "")
 
-		resp, err := gate.GetTargetServerGroup(ctx, app, account, cluster, target, cloudProvider)
+		if !validTargets[target] {
+			return mcp.NewToolResultError(fmt.Sprintf("invalid target %q: must be one of newest, oldest, largest, smallest, ancestor", target)), nil
+		}
+
+		resp, err := gate.GetTargetServerGroup(ctx, app, account, cluster, cloudProvider, scope, target)
 		if err != nil {
 			return mcp.NewToolResultError(err.Error()), nil
 		}

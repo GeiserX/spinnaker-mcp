@@ -33,7 +33,7 @@ func NewFindImages(gate *client.GateClient) (mcp.Tool, server.ToolHandlerFunc) {
 			return mcp.NewToolResultError(err.Error()), nil
 		}
 
-		params := make(map[string]string)
+		params := map[string]string{"provider": provider}
 		if q := req.GetString("query", ""); q != "" {
 			params["q"] = q
 		}
@@ -44,7 +44,7 @@ func NewFindImages(gate *client.GateClient) (mcp.Tool, server.ToolHandlerFunc) {
 			params["account"] = account
 		}
 
-		resp, err := gate.FindImages(ctx, provider, params)
+		resp, err := gate.FindImages(ctx, params)
 		if err != nil {
 			return mcp.NewToolResultError(err.Error()), nil
 		}

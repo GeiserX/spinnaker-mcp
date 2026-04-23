@@ -25,6 +25,11 @@ func NewSaveStrategy(gate *client.GateClient) (mcp.Tool, server.ToolHandlerFunc)
 			return mcp.NewToolResultError(err.Error()), nil
 		}
 
+		const maxStrategySize = 1 << 20 // 1 MB
+		if len(raw) > maxStrategySize {
+			return mcp.NewToolResultError(fmt.Sprintf("strategy JSON exceeds maximum size of %d bytes", maxStrategySize)), nil
+		}
+
 		var strategy map[string]any
 		if err := json.Unmarshal([]byte(raw), &strategy); err != nil {
 			return mcp.NewToolResultError(fmt.Sprintf("invalid strategy JSON: %v", err)), nil

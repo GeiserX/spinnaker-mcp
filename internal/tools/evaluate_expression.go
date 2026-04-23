@@ -3,11 +3,16 @@ package tools
 import (
 	"context"
 	"fmt"
+	"regexp"
+	"strings"
 
 	"github.com/geiserx/spinnaker-mcp/client"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 )
+
+// dangerousSpEL blocks Java reflection and class instantiation patterns
+var dangerousSpEL = regexp.MustCompile(`(?i)(T\s*\(|\.class\b|\.getClass\s*\(|Runtime|ProcessBuilder|Thread|ClassLoader|URLClassLoader|ScriptEngine|MethodHandle)`)
 
 func NewEvaluateExpression(gate *client.GateClient) (mcp.Tool, server.ToolHandlerFunc) {
 	tool := mcp.NewTool("evaluate_expression",
@@ -30,6 +35,16 @@ func NewEvaluateExpression(gate *client.GateClient) (mcp.Tool, server.ToolHandle
 		expression, err := req.RequireString("expression")
 		if err != nil {
 			return mcp.NewToolResultError(err.Error()), nil
+		}
+
+		if len(expression) > 4096 {
+			return mcp.NewToolResultError("expression exceeds maximum length of 4096 characters"), nil
+		}
+		if dangerousSpEL.MatchString(expression) {
+			return mcp.NewToolResultError("expression contains disallowed patterns (type references, reflection, or dangerous classes are not permitted via MCP)"), nil
+		}
+		if strings.Contains(expression, "new ") {
+			return mcp.NewToolResultError("expression contains disallowed 'new' keyword (object instantiation is not permitted via MCP)"), nil
 		}
 
 		resp, err := gate.EvaluateExpression(ctx, executionID, expression)

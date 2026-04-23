@@ -33,6 +33,11 @@ func NewUpdatePipeline(gate *client.GateClient) (mcp.Tool, server.ToolHandlerFun
 			return mcp.NewToolResultError(err.Error()), nil
 		}
 
+		const maxPipelineSize = 1 << 20 // 1 MB
+		if len(raw) > maxPipelineSize {
+			return mcp.NewToolResultError(fmt.Sprintf("pipeline JSON exceeds maximum size of %d bytes", maxPipelineSize)), nil
+		}
+
 		var pipeline map[string]any
 		if err := json.Unmarshal([]byte(raw), &pipeline); err != nil {
 			return mcp.NewToolResultError(fmt.Sprintf("invalid pipeline JSON: %v", err)), nil

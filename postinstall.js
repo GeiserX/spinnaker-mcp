@@ -101,24 +101,22 @@ async function main() {
     downloadFile(checksumURL).catch(() => null),
   ]);
 
-  if (checksumData) {
-    const lines = checksumData.toString().split("\n");
-    const line = lines.find((l) => l.includes(assetName));
-    if (line) {
-      const expectedHash = line.trim().split(/\s+/)[0];
-      const actualHash = crypto.createHash("sha256").update(buffer).digest("hex");
-      if (actualHash !== expectedHash) {
-        throw new Error(
-          `Checksum mismatch for ${assetName}: expected ${expectedHash}, got ${actualHash}`
-        );
-      }
-      console.log("Checksum verified.");
-    } else {
-      console.warn(`Warning: no checksum entry found for ${assetName}, skipping verification.`);
-    }
-  } else {
-    console.warn("Warning: could not download checksums.txt, skipping verification.");
+  if (!checksumData) {
+    throw new Error("Failed to download checksums.txt — cannot verify binary integrity");
   }
+  const lines = checksumData.toString().split("\n");
+  const line = lines.find((l) => l.includes(assetName));
+  if (!line) {
+    throw new Error(`No checksum entry found for ${assetName} in checksums.txt`);
+  }
+  const expectedHash = line.trim().split(/\s+/)[0];
+  const actualHash = crypto.createHash("sha256").update(buffer).digest("hex");
+  if (actualHash !== expectedHash) {
+    throw new Error(
+      `Checksum mismatch for ${assetName}: expected ${expectedHash}, got ${actualHash}`
+    );
+  }
+  console.log("Checksum verified.");
 
   console.log("Extracting binary...");
   await extract(buffer, assetName);

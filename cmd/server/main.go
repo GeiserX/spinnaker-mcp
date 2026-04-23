@@ -171,9 +171,13 @@ func main() {
 		if err != nil || p < 1 || p > 65535 {
 			log.Fatalf("Invalid MCP_PORT %q: must be 1-65535", portStr)
 		}
+		bindAddr := os.Getenv("MCP_BIND_ADDR")
+		if bindAddr == "" {
+			bindAddr = "127.0.0.1"
+		}
 		httpSrv := server.NewStreamableHTTPServer(s)
-		log.Printf("Spinnaker MCP listening on :%s", portStr)
-		if err := httpSrv.Start(":" + portStr); err != nil {
+		log.Printf("Spinnaker MCP listening on %s:%s", bindAddr, portStr)
+		if err := httpSrv.Start(bindAddr + ":" + portStr); err != nil {
 			log.Fatalf("server error: %v", err)
 		}
 	}
