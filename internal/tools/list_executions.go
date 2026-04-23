@@ -11,7 +11,7 @@ import (
 
 func NewListExecutions(gate *client.GateClient) (mcp.Tool, server.ToolHandlerFunc) {
 	tool := mcp.NewTool("list_executions",
-		mcp.WithDescription("List recent pipeline executions for a Spinnaker application, optionally filtered by status"),
+		mcp.WithDescription("List recent pipeline executions for a Spinnaker application, optionally filtered by status. Use this to monitor deployment activity or find a specific execution ID. Returns JSON array of execution summaries with status, timing, and trigger info. Use get_execution for full details of a specific run."),
 		mcp.WithString("application",
 			mcp.Required(),
 			mcp.Description("Application name as registered in Spinnaker"),

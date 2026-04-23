@@ -11,7 +11,7 @@ import (
 
 func NewListServerGroups(gate *client.GateClient) (mcp.Tool, server.ToolHandlerFunc) {
 	tool := mcp.NewTool("list_server_groups",
-		mcp.WithDescription("List all server groups (deployment targets) for a Spinnaker application, including instance counts and cloud provider details"),
+		mcp.WithDescription("List all server groups (ASGs, instance groups, replica sets) for a Spinnaker application. Use this to view active deployment targets and their instance counts across regions and accounts. Returns JSON array of server group objects with instance counts, cloud provider details, and region info."),
 		mcp.WithString("application",
 			mcp.Required(),
 			mcp.Description("Application name as registered in Spinnaker"),

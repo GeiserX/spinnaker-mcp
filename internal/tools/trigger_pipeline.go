@@ -12,7 +12,7 @@ import (
 
 func NewTriggerPipeline(gate *client.GateClient) (mcp.Tool, server.ToolHandlerFunc) {
 	tool := mcp.NewTool("trigger_pipeline",
-		mcp.WithDescription("Trigger a pipeline execution with optional parameters. Returns the execution reference ID."),
+		mcp.WithDescription("Trigger a new pipeline execution with optional parameters. Use this to start a deployment, build, or any configured pipeline workflow. Returns the execution reference ID that can be passed to get_execution or list_executions to monitor progress. This is a mutating operation that starts a real pipeline run."),
 		mcp.WithString("application",
 			mcp.Required(),
 			mcp.Description("Application name as registered in Spinnaker"),

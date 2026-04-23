@@ -11,7 +11,7 @@ import (
 
 func NewGetInstance(gate *client.GateClient) (mcp.Tool, server.ToolHandlerFunc) {
 	tool := mcp.NewTool("get_instance",
-		mcp.WithDescription("Get details for a specific instance"),
+		mcp.WithDescription("Get details for a specific compute instance by account, region, and instance ID. Use this to inspect instance health, metadata, launch time, and cloud-specific attributes. Returns JSON with full instance details including health indicators."),
 		mcp.WithString("account",
 			mcp.Required(),
 			mcp.Description("Spinnaker account name"),
@@ -22,7 +22,7 @@ func NewGetInstance(gate *client.GateClient) (mcp.Tool, server.ToolHandlerFunc) 
 		),
 		mcp.WithString("instance_id",
 			mcp.Required(),
-			mcp.Description("Instance ID"),
+			mcp.Description("Cloud provider instance ID (e.g., i-0abc1234def56789 for AWS)"),
 		),
 		readOnly(),
 	)

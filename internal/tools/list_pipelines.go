@@ -11,7 +11,7 @@ import (
 
 func NewListPipelines(gate *client.GateClient) (mcp.Tool, server.ToolHandlerFunc) {
 	tool := mcp.NewTool("list_pipelines",
-		mcp.WithDescription("List all pipeline configurations for a Spinnaker application"),
+		mcp.WithDescription("List all pipeline configurations for a Spinnaker application. Use this to discover available pipelines before triggering or inspecting a specific one. Returns JSON array of pipeline configuration objects with name, stages, triggers, and parameters."),
 		mcp.WithString("application",
 			mcp.Required(),
 			mcp.Description("Application name as registered in Spinnaker"),

@@ -11,7 +11,7 @@ import (
 
 func NewGetTask(gate *client.GateClient) (mcp.Tool, server.ToolHandlerFunc) {
 	tool := mcp.NewTool("get_task",
-		mcp.WithDescription("Get the status and details of a Spinnaker orchestration task (e.g. deploy, resize, rollback)"),
+		mcp.WithDescription("Get the status and details of a Spinnaker orchestration task (e.g., deploy, resize, rollback, delete). Use this to monitor the progress of a long-running infrastructure operation. Returns JSON with task status, start/end times, retry info, and step-by-step execution details."),
 		mcp.WithString("task_id",
 			mcp.Required(),
 			mcp.Description("Orchestration task ID returned by Spinnaker when an operation is submitted"),

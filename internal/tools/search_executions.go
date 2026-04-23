@@ -11,7 +11,7 @@ import (
 
 func NewSearchExecutions(gate *client.GateClient) (mcp.Tool, server.ToolHandlerFunc) {
 	tool := mcp.NewTool("search_executions",
-		mcp.WithDescription("Search pipeline executions for an application with optional filters"),
+		mcp.WithDescription("Search pipeline executions across an application with rich filters such as status, trigger type, and time range. Use this instead of list_executions when you need to find executions matching specific criteria. Returns JSON array of matching execution summaries."),
 		mcp.WithString("application",
 			mcp.Required(),
 			mcp.Description("Application name as registered in Spinnaker"),

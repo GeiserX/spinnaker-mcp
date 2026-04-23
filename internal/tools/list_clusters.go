@@ -11,7 +11,7 @@ import (
 
 func NewListClusters(gate *client.GateClient) (mcp.Tool, server.ToolHandlerFunc) {
 	tool := mcp.NewTool("list_clusters",
-		mcp.WithDescription("List all clusters for a Spinnaker application"),
+		mcp.WithDescription("List all cluster names for a Spinnaker application, grouped by account. Use this to discover clusters before drilling into a specific one with get_cluster. Returns JSON object mapping account names to arrays of cluster names."),
 		mcp.WithString("application",
 			mcp.Required(),
 			mcp.Description("Application name as registered in Spinnaker"),

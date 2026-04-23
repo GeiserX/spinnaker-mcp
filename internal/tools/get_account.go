@@ -11,7 +11,7 @@ import (
 
 func NewGetAccount(gate *client.GateClient) (mcp.Tool, server.ToolHandlerFunc) {
 	tool := mcp.NewTool("get_account",
-		mcp.WithDescription("Get details for a specific Spinnaker account"),
+		mcp.WithDescription("Get details for a specific Spinnaker account by name, including its cloud provider type, permissions, and regions. Use this to verify account configuration or check permissions before deploying. Returns JSON with full account metadata."),
 		mcp.WithString("account",
 			mcp.Required(),
 			mcp.Description("Spinnaker account name"),

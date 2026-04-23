@@ -16,7 +16,7 @@ var dangerousSpEL = regexp.MustCompile(`(?i)(T\s*\(|\.class\b|\.getClass\s*\(|Ru
 
 func NewEvaluateExpression(gate *client.GateClient) (mcp.Tool, server.ToolHandlerFunc) {
 	tool := mcp.NewTool("evaluate_expression",
-		mcp.WithDescription("Evaluate a SpEL expression against a pipeline execution context"),
+		mcp.WithDescription("Evaluate a Spring Expression Language (SpEL) expression against a pipeline execution context. Use this to inspect pipeline variables, stage outputs, or computed values during debugging. Dangerous patterns (reflection, class instantiation) are blocked for security. Returns the evaluated expression result as JSON."),
 		mcp.WithString("execution_id",
 			mcp.Required(),
 			mcp.Description("Pipeline execution ID to evaluate against"),

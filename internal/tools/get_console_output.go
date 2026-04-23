@@ -11,7 +11,7 @@ import (
 
 func NewGetConsoleOutput(gate *client.GateClient) (mcp.Tool, server.ToolHandlerFunc) {
 	tool := mcp.NewTool("get_console_output",
-		mcp.WithDescription("Get console output for a specific instance"),
+		mcp.WithDescription("Get the console output (boot log) for a specific compute instance. Use this to debug instance startup failures or inspect early boot messages. Requires account, region, and instance ID. Returns the raw console output text."),
 		mcp.WithString("account",
 			mcp.Required(),
 			mcp.Description("Spinnaker account name"),
@@ -22,7 +22,7 @@ func NewGetConsoleOutput(gate *client.GateClient) (mcp.Tool, server.ToolHandlerF
 		),
 		mcp.WithString("instance_id",
 			mcp.Required(),
-			mcp.Description("Instance ID"),
+			mcp.Description("Cloud provider instance ID (e.g., i-0abc1234def56789 for AWS)"),
 		),
 		mcp.WithString("provider",
 			mcp.Description("Cloud provider (e.g. aws, gce, kubernetes)"),

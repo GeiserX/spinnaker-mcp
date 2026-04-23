@@ -11,7 +11,7 @@ import (
 
 func NewPauseExecution(gate *client.GateClient) (mcp.Tool, server.ToolHandlerFunc) {
 	tool := mcp.NewTool("pause_execution",
-		mcp.WithDescription("Pause a running pipeline execution at the current stage"),
+		mcp.WithDescription("Pause a running pipeline execution at the current stage boundary. Use this to temporarily halt a deployment for manual review before it continues to the next stage. The execution can be resumed later with resume_execution. Returns a confirmation message."),
 		mcp.WithString("execution_id",
 			mcp.Required(),
 			mcp.Description("Pipeline execution ID to pause"),

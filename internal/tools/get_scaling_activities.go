@@ -11,7 +11,7 @@ import (
 
 func NewGetScalingActivities(gate *client.GateClient) (mcp.Tool, server.ToolHandlerFunc) {
 	tool := mcp.NewTool("get_scaling_activities",
-		mcp.WithDescription("Get scaling activities for a server group in a Spinnaker cluster"),
+		mcp.WithDescription("Get scaling activities for a server group in a Spinnaker cluster. Use this to audit recent auto-scaling events (scale-up, scale-down) and diagnose capacity issues. Returns JSON array of scaling activity records with timestamps, descriptions, and status."),
 		mcp.WithString("application",
 			mcp.Required(),
 			mcp.Description("Application name as registered in Spinnaker"),
@@ -22,11 +22,11 @@ func NewGetScalingActivities(gate *client.GateClient) (mcp.Tool, server.ToolHand
 		),
 		mcp.WithString("cluster_name",
 			mcp.Required(),
-			mcp.Description("Cluster name"),
+			mcp.Description("Cluster name as shown in the Spinnaker UI"),
 		),
 		mcp.WithString("server_group_name",
 			mcp.Required(),
-			mcp.Description("Server group name"),
+			mcp.Description("Server group name (e.g., myapp-v001)"),
 		),
 		mcp.WithString("provider",
 			mcp.Description("Cloud provider (e.g. aws, gce, kubernetes)"),

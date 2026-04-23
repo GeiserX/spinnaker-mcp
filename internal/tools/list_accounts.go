@@ -10,7 +10,7 @@ import (
 
 func NewListAccounts(gate *client.GateClient) (mcp.Tool, server.ToolHandlerFunc) {
 	tool := mcp.NewTool("list_accounts",
-		mcp.WithDescription("List all configured Spinnaker accounts (cloud provider integrations)"),
+		mcp.WithDescription("List all configured Spinnaker accounts (cloud provider integrations). Use this to discover available cloud accounts before querying infrastructure or deploying. Returns JSON array of account objects with provider type, environment, and permissions."),
 		readOnly(),
 	)
 

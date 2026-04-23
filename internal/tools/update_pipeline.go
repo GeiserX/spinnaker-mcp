@@ -12,7 +12,7 @@ import (
 
 func NewUpdatePipeline(gate *client.GateClient) (mcp.Tool, server.ToolHandlerFunc) {
 	tool := mcp.NewTool("update_pipeline",
-		mcp.WithDescription("Update an existing pipeline configuration in Spinnaker"),
+		mcp.WithDescription("Update an existing pipeline configuration in Spinnaker. Use this to modify stages, triggers, or parameters of a pipeline that already exists — use save_pipeline instead to create a new one. Accepts a full pipeline JSON definition and returns a confirmation. This is a mutating operation that overwrites the current pipeline config."),
 		mcp.WithString("pipeline_id",
 			mcp.Required(),
 			mcp.Description("Pipeline configuration ID to update"),
