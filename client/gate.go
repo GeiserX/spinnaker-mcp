@@ -419,3 +419,29 @@ func (c *GateClient) GetAccount(ctx context.Context, account string) ([]byte, er
 func (c *GateClient) GetTask(ctx context.Context, taskID string) ([]byte, error) {
 	return c.get(ctx, fmt.Sprintf("/tasks/%s", url.PathEscape(taskID)), nil)
 }
+
+// --- Health ---
+
+// Ping checks if the Gate API is reachable by issuing a HEAD request to the base URL.
+func (c *GateClient) Ping(ctx context.Context) error {
+	u := c.buildURL("/applications", nil)
+	req, err := http.NewRequestWithContext(ctx, "HEAD", u, nil)
+	if err != nil {
+		return fmt.Errorf("building health check request: %w", err)
+	}
+	c.auth.apply(req)
+	resp, err := c.hc.Do(req)
+	if err != nil {
+		return err
+	}
+	resp.Body.Close()
+	if resp.StatusCode >= 500 {
+		return fmt.Errorf("gate returned %d", resp.StatusCode)
+	}
+	return nil
+}
+
+// BaseURL returns the configured Gate API base URL string.
+func (c *GateClient) BaseURL() string {
+	return c.base.String()
+}

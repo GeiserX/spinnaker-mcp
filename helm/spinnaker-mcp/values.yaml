@@ -1,0 +1,72 @@
+gate:
+  url: "http://spin-gate:8084"
+  auth:
+    # Auth type: token, basic, or none (x509 certs use gate.tls.certSecret below)
+    type: none
+    token: ""
+    user: ""
+    pass: ""
+    # Name of existing Secret containing auth credentials
+    # Must have keys matching auth type (e.g., GATE_TOKEN for token auth)
+    existingSecret: ""
+  tls:
+    insecure: false
+    # Name of existing Secret containing client cert + key (keys: tls.crt, tls.key)
+    certSecret: ""
+
+transport: http
+port: 8085
+bindAddr: "0.0.0.0"
+toolsets: "all"
+
+image:
+  repository: drumsergio/spinnaker-mcp
+  # Defaults to chart appVersion
+  tag: ""
+  pullPolicy: IfNotPresent
+
+replicaCount: 1
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 200m
+    memory: 128Mi
+
+probes:
+  liveness:
+    path: /healthz
+    initialDelaySeconds: 5
+    periodSeconds: 10
+  readiness:
+    path: /readyz
+    initialDelaySeconds: 5
+    periodSeconds: 10
+
+service:
+  type: ClusterIP
+  port: 8085
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  hosts: []
+  #  - host: spinnaker-mcp.example.com
+  #    paths:
+  #      - path: /
+  #        pathType: Prefix
+  tls: []
+
+serviceAccount:
+  create: true
+  name: ""
+  annotations: {}
+
+podAnnotations: {}
+podLabels: {}
+nodeSelector: {}
+tolerations: []
+affinity: {}

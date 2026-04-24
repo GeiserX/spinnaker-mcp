@@ -1,7 +1,7 @@
 {
   "name": "spinnaker-mcp",
   "mcpName": "io.github.GeiserX/spinnaker-mcp",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "description": "MCP server that bridges any Spinnaker instance via its Gate API, exposing application management, pipeline operations, and deployment infrastructure over JSON-RPC",
   "license": "GPL-3.0",
   "repository": {

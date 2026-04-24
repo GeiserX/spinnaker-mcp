@@ -1,0 +1,95 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "spinnaker-mcp.fullname" . }}
+  labels:
+    {{- include "spinnaker-mcp.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "spinnaker-mcp.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "spinnaker-mcp.selectorLabels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      serviceAccountName: {{ include "spinnaker-mcp.serviceAccountName" . }}
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ include "spinnaker-mcp.imageTag" . }}"
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "spinnaker-mcp.fullname" . }}
+            {{- if .Values.gate.auth.existingSecret }}
+            - secretRef:
+                name: {{ .Values.gate.auth.existingSecret }}
+            {{- else if or (eq .Values.gate.auth.type "token") (eq .Values.gate.auth.type "basic") }}
+            - secretRef:
+                name: {{ include "spinnaker-mcp.fullname" . }}
+            {{- end }}
+          {{- if .Values.gate.tls.certSecret }}
+          volumeMounts:
+            - name: gate-cert
+              mountPath: /etc/spinnaker-mcp/certs
+              readOnly: true
+          env:
+            - name: GATE_CERT_FILE
+              value: /etc/spinnaker-mcp/certs/tls.crt
+            - name: GATE_KEY_FILE
+              value: /etc/spinnaker-mcp/certs/tls.key
+          {{- end }}
+          {{- if eq .Values.transport "http" }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.port }}
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.probes.liveness.path }}
+              port: http
+            initialDelaySeconds: {{ .Values.probes.liveness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.probes.liveness.periodSeconds }}
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.probes.readiness.path }}
+              port: http
+            initialDelaySeconds: {{ .Values.probes.readiness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.probes.readiness.periodSeconds }}
+          {{- end }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      {{- if .Values.gate.tls.certSecret }}
+      volumes:
+        - name: gate-cert
+          secret:
+            secretName: {{ .Values.gate.tls.certSecret }}
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

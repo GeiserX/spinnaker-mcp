@@ -25,4 +25,8 @@ ENV GATE_URL=http://spin-gate:8084
 ENV TRANSPORT=stdio
 
 USER mcp
+
+HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
+  CMD if [ "$TRANSPORT" = "http" ] || [ "$TRANSPORT" = "HTTP" ]; then wget -qO- http://localhost:8085/healthz || exit 1; else exit 0; fi
+
 ENTRYPOINT ["/usr/local/bin/spinnaker-mcp"]
