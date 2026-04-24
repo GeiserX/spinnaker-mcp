@@ -12,175 +12,193 @@ import (
 
 // Register adds all Spinnaker resource templates to the MCP server.
 func Register(s *server.MCPServer, gate *client.GateClient) {
-	// Static resources (no URI parameters)
 	s.AddResource(
-		mcp.NewResource(
-			"spinnaker://applications",
-			"All Applications",
+		mcp.NewResource("spinnaker://applications", "All Applications",
 			mcp.WithResourceDescription("List of all Spinnaker applications with metadata"),
 			mcp.WithMIMEType("application/json"),
 		),
-		func(ctx context.Context, req mcp.ReadResourceRequest) ([]mcp.ResourceContents, error) {
-			data, err := gate.ListApplications(ctx)
-			if err != nil {
-				return nil, fmt.Errorf("listing applications: %w", err)
-			}
-			return []mcp.ResourceContents{textResource(req.Params.URI, data)}, nil
-		},
+		handleListApplications(gate),
 	)
 
 	s.AddResource(
-		mcp.NewResource(
-			"spinnaker://accounts",
-			"All Accounts",
+		mcp.NewResource("spinnaker://accounts", "All Accounts",
 			mcp.WithResourceDescription("All configured cloud accounts with provider type and environment"),
 			mcp.WithMIMEType("application/json"),
 		),
-		func(ctx context.Context, req mcp.ReadResourceRequest) ([]mcp.ResourceContents, error) {
-			data, err := gate.ListAccounts(ctx)
-			if err != nil {
-				return nil, fmt.Errorf("listing accounts: %w", err)
-			}
-			return []mcp.ResourceContents{textResource(req.Params.URI, data)}, nil
-		},
+		handleListAccounts(gate),
 	)
 
-	// Parameterized templates
 	s.AddResourceTemplate(
-		mcp.NewResourceTemplate(
-			"spinnaker://application/{name}",
-			"Application Details",
+		mcp.NewResourceTemplate("spinnaker://application/{name}", "Application Details",
 			mcp.WithTemplateDescription("Application details including accounts, clusters, and attributes"),
 			mcp.WithTemplateMIMEType("application/json"),
 		),
-		func(ctx context.Context, req mcp.ReadResourceRequest) ([]mcp.ResourceContents, error) {
-			name := extractParam(req, "name")
-			data, err := gate.GetApplication(ctx, name)
-			if err != nil {
-				return nil, fmt.Errorf("getting application %q: %w", name, err)
-			}
-			return []mcp.ResourceContents{textResource(req.Params.URI, data)}, nil
-		},
+		handleGetApplication(gate),
 	)
 
 	s.AddResourceTemplate(
-		mcp.NewResourceTemplate(
-			"spinnaker://application/{name}/pipelines",
-			"Application Pipelines",
+		mcp.NewResourceTemplate("spinnaker://application/{name}/pipelines", "Application Pipelines",
 			mcp.WithTemplateDescription("All pipeline configurations for an application"),
 			mcp.WithTemplateMIMEType("application/json"),
 		),
-		func(ctx context.Context, req mcp.ReadResourceRequest) ([]mcp.ResourceContents, error) {
-			name := extractParam(req, "name")
-			data, err := gate.ListPipelines(ctx, name)
-			if err != nil {
-				return nil, fmt.Errorf("listing pipelines for %q: %w", name, err)
-			}
-			return []mcp.ResourceContents{textResource(req.Params.URI, data)}, nil
-		},
+		handleListPipelines(gate),
 	)
 
 	s.AddResourceTemplate(
-		mcp.NewResourceTemplate(
-			"spinnaker://application/{name}/executions",
-			"Application Executions",
+		mcp.NewResourceTemplate("spinnaker://application/{name}/executions", "Application Executions",
 			mcp.WithTemplateDescription("Recent pipeline executions with status and timing"),
 			mcp.WithTemplateMIMEType("application/json"),
 		),
-		func(ctx context.Context, req mcp.ReadResourceRequest) ([]mcp.ResourceContents, error) {
-			name := extractParam(req, "name")
-			data, err := gate.ListExecutions(ctx, name, 25, "")
-			if err != nil {
-				return nil, fmt.Errorf("listing executions for %q: %w", name, err)
-			}
-			return []mcp.ResourceContents{textResource(req.Params.URI, data)}, nil
-		},
+		handleListExecutions(gate),
 	)
 
 	s.AddResourceTemplate(
-		mcp.NewResourceTemplate(
-			"spinnaker://application/{name}/clusters",
-			"Application Clusters",
+		mcp.NewResourceTemplate("spinnaker://application/{name}/clusters", "Application Clusters",
 			mcp.WithTemplateDescription("Clusters grouped by account for an application"),
 			mcp.WithTemplateMIMEType("application/json"),
 		),
-		func(ctx context.Context, req mcp.ReadResourceRequest) ([]mcp.ResourceContents, error) {
-			name := extractParam(req, "name")
-			data, err := gate.ListClusters(ctx, name)
-			if err != nil {
-				return nil, fmt.Errorf("listing clusters for %q: %w", name, err)
-			}
-			return []mcp.ResourceContents{textResource(req.Params.URI, data)}, nil
-		},
+		handleListClusters(gate),
 	)
 
 	s.AddResourceTemplate(
-		mcp.NewResourceTemplate(
-			"spinnaker://application/{name}/server-groups",
-			"Application Server Groups",
+		mcp.NewResourceTemplate("spinnaker://application/{name}/server-groups", "Application Server Groups",
 			mcp.WithTemplateDescription("Server groups with instance counts, image, and capacity"),
 			mcp.WithTemplateMIMEType("application/json"),
 		),
-		func(ctx context.Context, req mcp.ReadResourceRequest) ([]mcp.ResourceContents, error) {
-			name := extractParam(req, "name")
-			data, err := gate.ListServerGroups(ctx, name)
-			if err != nil {
-				return nil, fmt.Errorf("listing server groups for %q: %w", name, err)
-			}
-			return []mcp.ResourceContents{textResource(req.Params.URI, data)}, nil
-		},
+		handleListServerGroups(gate),
 	)
 
 	s.AddResourceTemplate(
-		mcp.NewResourceTemplate(
-			"spinnaker://application/{name}/load-balancers",
-			"Application Load Balancers",
+		mcp.NewResourceTemplate("spinnaker://application/{name}/load-balancers", "Application Load Balancers",
 			mcp.WithTemplateDescription("Load balancers across all accounts and regions"),
 			mcp.WithTemplateMIMEType("application/json"),
 		),
-		func(ctx context.Context, req mcp.ReadResourceRequest) ([]mcp.ResourceContents, error) {
-			name := extractParam(req, "name")
-			data, err := gate.ListLoadBalancers(ctx, name)
-			if err != nil {
-				return nil, fmt.Errorf("listing load balancers for %q: %w", name, err)
-			}
-			return []mcp.ResourceContents{textResource(req.Params.URI, data)}, nil
-		},
+		handleListLoadBalancers(gate),
 	)
 
 	s.AddResourceTemplate(
-		mcp.NewResourceTemplate(
-			"spinnaker://execution/{id}",
-			"Execution Details",
+		mcp.NewResourceTemplate("spinnaker://execution/{id}", "Execution Details",
 			mcp.WithTemplateDescription("Full execution details including all stages, outputs, and timing"),
 			mcp.WithTemplateMIMEType("application/json"),
 		),
-		func(ctx context.Context, req mcp.ReadResourceRequest) ([]mcp.ResourceContents, error) {
-			id := extractParam(req, "id")
-			data, err := gate.GetExecution(ctx, id)
-			if err != nil {
-				return nil, fmt.Errorf("getting execution %q: %w", id, err)
-			}
-			return []mcp.ResourceContents{textResource(req.Params.URI, data)}, nil
-		},
+		handleGetExecution(gate),
 	)
 
 	s.AddResourceTemplate(
-		mcp.NewResourceTemplate(
-			"spinnaker://account/{name}",
-			"Account Details",
+		mcp.NewResourceTemplate("spinnaker://account/{name}", "Account Details",
 			mcp.WithTemplateDescription("Account details with regions, permissions, and provider metadata"),
 			mcp.WithTemplateMIMEType("application/json"),
 		),
-		func(ctx context.Context, req mcp.ReadResourceRequest) ([]mcp.ResourceContents, error) {
-			name := extractParam(req, "name")
-			data, err := gate.GetAccount(ctx, name)
-			if err != nil {
-				return nil, fmt.Errorf("getting account %q: %w", name, err)
-			}
-			return []mcp.ResourceContents{textResource(req.Params.URI, data)}, nil
-		},
+		handleGetAccount(gate),
 	)
+}
+
+func handleListApplications(gate *client.GateClient) server.ResourceHandlerFunc {
+	return func(ctx context.Context, req mcp.ReadResourceRequest) ([]mcp.ResourceContents, error) {
+		data, err := gate.ListApplications(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("listing applications: %w", err)
+		}
+		return []mcp.ResourceContents{textResource(req.Params.URI, data)}, nil
+	}
+}
+
+func handleListAccounts(gate *client.GateClient) server.ResourceHandlerFunc {
+	return func(ctx context.Context, req mcp.ReadResourceRequest) ([]mcp.ResourceContents, error) {
+		data, err := gate.ListAccounts(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("listing accounts: %w", err)
+		}
+		return []mcp.ResourceContents{textResource(req.Params.URI, data)}, nil
+	}
+}
+
+func handleGetApplication(gate *client.GateClient) server.ResourceTemplateHandlerFunc {
+	return func(ctx context.Context, req mcp.ReadResourceRequest) ([]mcp.ResourceContents, error) {
+		name := extractParam(req, "name")
+		data, err := gate.GetApplication(ctx, name)
+		if err != nil {
+			return nil, fmt.Errorf("getting application %q: %w", name, err)
+		}
+		return []mcp.ResourceContents{textResource(req.Params.URI, data)}, nil
+	}
+}
+
+func handleListPipelines(gate *client.GateClient) server.ResourceTemplateHandlerFunc {
+	return func(ctx context.Context, req mcp.ReadResourceRequest) ([]mcp.ResourceContents, error) {
+		name := extractParam(req, "name")
+		data, err := gate.ListPipelines(ctx, name)
+		if err != nil {
+			return nil, fmt.Errorf("listing pipelines for %q: %w", name, err)
+		}
+		return []mcp.ResourceContents{textResource(req.Params.URI, data)}, nil
+	}
+}
+
+func handleListExecutions(gate *client.GateClient) server.ResourceTemplateHandlerFunc {
+	return func(ctx context.Context, req mcp.ReadResourceRequest) ([]mcp.ResourceContents, error) {
+		name := extractParam(req, "name")
+		data, err := gate.ListExecutions(ctx, name, 25, "")
+		if err != nil {
+			return nil, fmt.Errorf("listing executions for %q: %w", name, err)
+		}
+		return []mcp.ResourceContents{textResource(req.Params.URI, data)}, nil
+	}
+}
+
+func handleListClusters(gate *client.GateClient) server.ResourceTemplateHandlerFunc {
+	return func(ctx context.Context, req mcp.ReadResourceRequest) ([]mcp.ResourceContents, error) {
+		name := extractParam(req, "name")
+		data, err := gate.ListClusters(ctx, name)
+		if err != nil {
+			return nil, fmt.Errorf("listing clusters for %q: %w", name, err)
+		}
+		return []mcp.ResourceContents{textResource(req.Params.URI, data)}, nil
+	}
+}
+
+func handleListServerGroups(gate *client.GateClient) server.ResourceTemplateHandlerFunc {
+	return func(ctx context.Context, req mcp.ReadResourceRequest) ([]mcp.ResourceContents, error) {
+		name := extractParam(req, "name")
+		data, err := gate.ListServerGroups(ctx, name)
+		if err != nil {
+			return nil, fmt.Errorf("listing server groups for %q: %w", name, err)
+		}
+		return []mcp.ResourceContents{textResource(req.Params.URI, data)}, nil
+	}
+}
+
+func handleListLoadBalancers(gate *client.GateClient) server.ResourceTemplateHandlerFunc {
+	return func(ctx context.Context, req mcp.ReadResourceRequest) ([]mcp.ResourceContents, error) {
+		name := extractParam(req, "name")
+		data, err := gate.ListLoadBalancers(ctx, name)
+		if err != nil {
+			return nil, fmt.Errorf("listing load balancers for %q: %w", name, err)
+		}
+		return []mcp.ResourceContents{textResource(req.Params.URI, data)}, nil
+	}
+}
+
+func handleGetExecution(gate *client.GateClient) server.ResourceTemplateHandlerFunc {
+	return func(ctx context.Context, req mcp.ReadResourceRequest) ([]mcp.ResourceContents, error) {
+		id := extractParam(req, "id")
+		data, err := gate.GetExecution(ctx, id)
+		if err != nil {
+			return nil, fmt.Errorf("getting execution %q: %w", id, err)
+		}
+		return []mcp.ResourceContents{textResource(req.Params.URI, data)}, nil
+	}
+}
+
+func handleGetAccount(gate *client.GateClient) server.ResourceTemplateHandlerFunc {
+	return func(ctx context.Context, req mcp.ReadResourceRequest) ([]mcp.ResourceContents, error) {
+		name := extractParam(req, "name")
+		data, err := gate.GetAccount(ctx, name)
+		if err != nil {
+			return nil, fmt.Errorf("getting account %q: %w", name, err)
+		}
+		return []mcp.ResourceContents{textResource(req.Params.URI, data)}, nil
+	}
 }
 
 func textResource(uri string, data []byte) mcp.TextResourceContents {

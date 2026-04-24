@@ -177,6 +177,13 @@ func TestRollbackPlan(t *testing.T) {
 	}
 }
 
+func TestRegister_DoesNotPanic(t *testing.T) {
+	s := server.NewMCPServer("test", "0.0.0",
+		server.WithPromptCapabilities(false),
+	)
+	Register(s)
+}
+
 func TestAllPromptNames(t *testing.T) {
 	expected := map[string]bool{
 		"deploy-review":    false,
