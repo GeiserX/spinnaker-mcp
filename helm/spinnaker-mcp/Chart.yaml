@@ -1,0 +1,18 @@
+apiVersion: v2
+name: spinnaker-mcp
+description: MCP server exposing Spinnaker CD platform via Gate API
+type: application
+version: 0.1.0
+appVersion: "0.3.3"
+home: https://github.com/GeiserX/spinnaker-mcp
+sources:
+  - https://github.com/GeiserX/spinnaker-mcp
+maintainers:
+  - name: GeiserX
+    url: https://github.com/GeiserX
+keywords:
+  - spinnaker
+  - mcp
+  - continuous-delivery
+  - pipeline
+  - model-context-protocol

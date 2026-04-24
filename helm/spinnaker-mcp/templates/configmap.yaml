@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "spinnaker-mcp.fullname" . }}
+  labels:
+    {{- include "spinnaker-mcp.labels" . | nindent 4 }}
+data:
+  GATE_URL: {{ .Values.gate.url | quote }}
+  GATE_INSECURE: {{ .Values.gate.tls.insecure | quote }}
+  TRANSPORT: {{ .Values.transport | quote }}
+  MCP_PORT: {{ .Values.port | quote }}
+  MCP_BIND_ADDR: {{ .Values.bindAddr | quote }}
+  TOOLSETS: {{ .Values.toolsets | quote }}
