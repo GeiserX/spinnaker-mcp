@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -11,7 +12,7 @@ import (
 )
 
 func TestHealthzHandler(t *testing.T) {
-	req := httptest.NewRequest("GET", "/healthz", nil)
+	req := httptest.NewRequestWithContext(context.Background(), "GET", "/healthz", nil)
 	w := httptest.NewRecorder()
 
 	healthzHandler(w, req)
@@ -46,7 +47,7 @@ func TestReadyzHandler_GateUp(t *testing.T) {
 	}
 
 	handler := readyzHandler(gate)
-	req := httptest.NewRequest("GET", "/readyz", nil)
+	req := httptest.NewRequestWithContext(context.Background(), "GET", "/readyz", nil)
 	w := httptest.NewRecorder()
 	handler(w, req)
 
@@ -80,7 +81,7 @@ func TestReadyzHandler_GateDown(t *testing.T) {
 	}
 
 	handler := readyzHandler(gate)
-	req := httptest.NewRequest("GET", "/readyz", nil)
+	req := httptest.NewRequestWithContext(context.Background(), "GET", "/readyz", nil)
 	w := httptest.NewRecorder()
 	handler(w, req)
 
@@ -114,7 +115,7 @@ func TestReadyzHandler_Gate500(t *testing.T) {
 	}
 
 	handler := readyzHandler(gate)
-	req := httptest.NewRequest("GET", "/readyz", nil)
+	req := httptest.NewRequestWithContext(context.Background(), "GET", "/readyz", nil)
 	w := httptest.NewRecorder()
 	handler(w, req)
 

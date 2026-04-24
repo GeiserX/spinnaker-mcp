@@ -132,9 +132,30 @@ func Resolve(raw string, allTools map[string][]ToolEntry) ([]ToolEntry, error) {
 		names[i] = strings.TrimSpace(strings.ToLower(names[i]))
 	}
 
-	// Check for meta-groups first (they can't be mixed with regular groups)
+	// Separate meta-groups from regular groups
+	var metas, groups []string
 	for _, name := range names {
 		switch name {
+		case MetaReadonly, MetaMutating, MetaAll:
+			metas = append(metas, name)
+		default:
+			groups = append(groups, name)
+		}
+	}
+
+	// Meta-groups cannot be mixed with regular groups
+	if len(metas) > 0 && len(groups) > 0 {
+		return nil, fmt.Errorf("meta-group %q cannot be combined with regular groups %v; use one or the other", metas[0], groups)
+	}
+
+	// Multiple meta-groups cannot be combined
+	if len(metas) > 1 {
+		return nil, fmt.Errorf("meta-groups cannot be combined: %v; use exactly one", metas)
+	}
+
+	// Handle single meta-group
+	if len(metas) == 1 {
+		switch metas[0] {
 		case MetaReadonly:
 			return filterByAnnotation(allTools, true), nil
 		case MetaMutating:
@@ -144,14 +165,14 @@ func Resolve(raw string, allTools map[string][]ToolEntry) ([]ToolEntry, error) {
 		}
 	}
 
-	// Validate all names
-	for _, name := range names {
+	// Validate all group names
+	for _, name := range groups {
 		if !isValidGroup(name) {
 			return nil, fmt.Errorf("unknown toolset %q; valid values: %s", name, strings.Join(allValidNames, ", "))
 		}
 	}
 
-	return flatten(allTools, names), nil
+	return flatten(allTools, groups), nil
 }
 
 func isValidGroup(name string) bool {

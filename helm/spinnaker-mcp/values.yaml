@@ -1,7 +1,7 @@
 gate:
   url: "http://spin-gate:8084"
   auth:
-    # Auth type: token, basic, cert, or none
+    # Auth type: token, basic, or none (x509 certs use gate.tls.certSecret below)
     type: none
     token: ""
     user: ""

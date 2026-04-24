@@ -116,6 +116,9 @@ func handleListAccounts(gate *client.GateClient) server.ResourceHandlerFunc {
 func handleGetApplication(gate *client.GateClient) server.ResourceTemplateHandlerFunc {
 	return func(ctx context.Context, req mcp.ReadResourceRequest) ([]mcp.ResourceContents, error) {
 		name := extractParam(req, "name")
+		if name == "" {
+			return nil, fmt.Errorf("missing required parameter: name")
+		}
 		data, err := gate.GetApplication(ctx, name)
 		if err != nil {
 			return nil, fmt.Errorf("getting application %q: %w", name, err)
@@ -127,6 +130,9 @@ func handleGetApplication(gate *client.GateClient) server.ResourceTemplateHandle
 func handleListPipelines(gate *client.GateClient) server.ResourceTemplateHandlerFunc {
 	return func(ctx context.Context, req mcp.ReadResourceRequest) ([]mcp.ResourceContents, error) {
 		name := extractParam(req, "name")
+		if name == "" {
+			return nil, fmt.Errorf("missing required parameter: name")
+		}
 		data, err := gate.ListPipelines(ctx, name)
 		if err != nil {
 			return nil, fmt.Errorf("listing pipelines for %q: %w", name, err)
@@ -138,6 +144,9 @@ func handleListPipelines(gate *client.GateClient) server.ResourceTemplateHandler
 func handleListExecutions(gate *client.GateClient) server.ResourceTemplateHandlerFunc {
 	return func(ctx context.Context, req mcp.ReadResourceRequest) ([]mcp.ResourceContents, error) {
 		name := extractParam(req, "name")
+		if name == "" {
+			return nil, fmt.Errorf("missing required parameter: name")
+		}
 		data, err := gate.ListExecutions(ctx, name, 25, "")
 		if err != nil {
 			return nil, fmt.Errorf("listing executions for %q: %w", name, err)
@@ -149,6 +158,9 @@ func handleListExecutions(gate *client.GateClient) server.ResourceTemplateHandle
 func handleListClusters(gate *client.GateClient) server.ResourceTemplateHandlerFunc {
 	return func(ctx context.Context, req mcp.ReadResourceRequest) ([]mcp.ResourceContents, error) {
 		name := extractParam(req, "name")
+		if name == "" {
+			return nil, fmt.Errorf("missing required parameter: name")
+		}
 		data, err := gate.ListClusters(ctx, name)
 		if err != nil {
 			return nil, fmt.Errorf("listing clusters for %q: %w", name, err)
@@ -160,6 +172,9 @@ func handleListClusters(gate *client.GateClient) server.ResourceTemplateHandlerF
 func handleListServerGroups(gate *client.GateClient) server.ResourceTemplateHandlerFunc {
 	return func(ctx context.Context, req mcp.ReadResourceRequest) ([]mcp.ResourceContents, error) {
 		name := extractParam(req, "name")
+		if name == "" {
+			return nil, fmt.Errorf("missing required parameter: name")
+		}
 		data, err := gate.ListServerGroups(ctx, name)
 		if err != nil {
 			return nil, fmt.Errorf("listing server groups for %q: %w", name, err)
@@ -171,6 +186,9 @@ func handleListServerGroups(gate *client.GateClient) server.ResourceTemplateHand
 func handleListLoadBalancers(gate *client.GateClient) server.ResourceTemplateHandlerFunc {
 	return func(ctx context.Context, req mcp.ReadResourceRequest) ([]mcp.ResourceContents, error) {
 		name := extractParam(req, "name")
+		if name == "" {
+			return nil, fmt.Errorf("missing required parameter: name")
+		}
 		data, err := gate.ListLoadBalancers(ctx, name)
 		if err != nil {
 			return nil, fmt.Errorf("listing load balancers for %q: %w", name, err)
@@ -182,6 +200,9 @@ func handleListLoadBalancers(gate *client.GateClient) server.ResourceTemplateHan
 func handleGetExecution(gate *client.GateClient) server.ResourceTemplateHandlerFunc {
 	return func(ctx context.Context, req mcp.ReadResourceRequest) ([]mcp.ResourceContents, error) {
 		id := extractParam(req, "id")
+		if id == "" {
+			return nil, fmt.Errorf("missing required parameter: id")
+		}
 		data, err := gate.GetExecution(ctx, id)
 		if err != nil {
 			return nil, fmt.Errorf("getting execution %q: %w", id, err)
@@ -193,6 +214,9 @@ func handleGetExecution(gate *client.GateClient) server.ResourceTemplateHandlerF
 func handleGetAccount(gate *client.GateClient) server.ResourceTemplateHandlerFunc {
 	return func(ctx context.Context, req mcp.ReadResourceRequest) ([]mcp.ResourceContents, error) {
 		name := extractParam(req, "name")
+		if name == "" {
+			return nil, fmt.Errorf("missing required parameter: name")
+		}
 		data, err := gate.GetAccount(ctx, name)
 		if err != nil {
 			return nil, fmt.Errorf("getting account %q: %w", name, err)

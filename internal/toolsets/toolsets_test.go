@@ -182,6 +182,22 @@ func TestIsReadOnly(t *testing.T) {
 	}
 }
 
+func TestResolve_MetaPlusGroupErrors(t *testing.T) {
+	tools := fakeTools()
+	_, err := Resolve("readonly,pipelines", tools)
+	if err == nil {
+		t.Fatal("expected error when mixing meta-group with regular group")
+	}
+}
+
+func TestResolve_MultipleMetaErrors(t *testing.T) {
+	tools := fakeTools()
+	_, err := Resolve("readonly,mutating", tools)
+	if err == nil {
+		t.Fatal("expected error when combining multiple meta-groups")
+	}
+}
+
 func TestBuildTools_AllGroupsPresent(t *testing.T) {
 	// BuildTools requires a real GateClient which we can't create without a server.
 	// Instead, verify that AllGroups covers expected names.

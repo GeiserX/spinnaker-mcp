@@ -25,7 +25,14 @@ spec:
       serviceAccountName: {{ include "spinnaker-mcp.serviceAccountName" . }}
       containers:
         - name: {{ .Chart.Name }}
-          image: "{{ .Values.image.repository }}:v{{ include "spinnaker-mcp.imageTag" . }}"
+          image: "{{ .Values.image.repository }}:{{ include "spinnaker-mcp.imageTag" . }}"
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           envFrom:
             - configMapRef:

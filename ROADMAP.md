@@ -2,7 +2,7 @@
 
 This document outlines the planned features and improvements for Spinnaker-MCP. The Spinnaker Gate API is extensive (~150+ endpoints across 60+ controllers), and this MCP server currently covers the highest-value operations. The roadmap is organized by priority and grouped by API domain.
 
-## Current State (v0.3.2)
+## Current State (v0.3.3)
 
 **37 tools** covering the core deployment workflow, pipeline lifecycle, and infrastructure visibility:
 
@@ -92,23 +92,23 @@ Expose read-only Spinnaker data as browsable MCP resources, allowing clients to 
 
 **Application Resources:**
 
-- [ ] `spinnaker://applications` — All Spinnaker applications with metadata (email, cloud providers, create time)
-- [ ] `spinnaker://application/{name}` — Application details including accounts, clusters, attributes, and pipeline count
-- [ ] `spinnaker://application/{name}/pipelines` — All pipeline configurations for an application (name, ID, stages, triggers, parameters)
-- [ ] `spinnaker://application/{name}/executions` — Recent pipeline executions (last 25) with status, timing, and trigger info
+- [x] `spinnaker://applications` — All Spinnaker applications with metadata (email, cloud providers, create time)
+- [x] `spinnaker://application/{name}` — Application details including accounts, clusters, attributes, and pipeline count
+- [x] `spinnaker://application/{name}/pipelines` — All pipeline configurations for an application (name, ID, stages, triggers, parameters)
+- [x] `spinnaker://application/{name}/executions` — Recent pipeline executions (last 25) with status, timing, and trigger info
 
 **Pipeline & Execution Resources:**
 
 - [ ] `spinnaker://pipeline/{id}` — Single pipeline configuration by pipeline config ID
-- [ ] `spinnaker://execution/{id}` — Full execution details including all stages, outputs, and timing
+- [x] `spinnaker://execution/{id}` — Full execution details including all stages, outputs, and timing
 
 **Infrastructure Resources:**
 
-- [ ] `spinnaker://accounts` — All configured cloud accounts with provider type and environment
-- [ ] `spinnaker://account/{name}` — Account details with regions, permissions, and provider-specific metadata
-- [ ] `spinnaker://application/{name}/clusters` — Clusters grouped by account for an application
-- [ ] `spinnaker://application/{name}/server-groups` — Server groups with instance counts, image, and capacity
-- [ ] `spinnaker://application/{name}/load-balancers` — Load balancers across all accounts and regions
+- [x] `spinnaker://accounts` — All configured cloud accounts with provider type and environment
+- [x] `spinnaker://account/{name}` — Account details with regions, permissions, and provider-specific metadata
+- [x] `spinnaker://application/{name}/clusters` — Clusters grouped by account for an application
+- [x] `spinnaker://application/{name}/server-groups` — Server groups with instance counts, image, and capacity
+- [x] `spinnaker://application/{name}/load-balancers` — Load balancers across all accounts and regions
 
 All resources are backed by existing Gate client methods — no new API calls required. Requires `server.WithResourceCapabilities(true)` and `s.AddResourceTemplate()` for parameterized URIs.
 
@@ -116,15 +116,15 @@ All resources are backed by existing Gate client methods — no new API calls re
 
 Pre-built prompt templates for common Spinnaker workflows. Prompts give LLMs structured starting points for multi-step operations, referencing the right tools in the right order.
 
-- [ ] **`deploy-review`** — Review a pipeline configuration before triggering. Arguments: `application` (required), `pipeline` (required). Produces a structured checklist covering: pipeline stages and their types, trigger configuration, parameter defaults, notification setup, manual judgment gates, expected artifacts, and last 5 execution outcomes. Designed for pre-deployment sign-off.
+- [x] **`deploy-review`** — Review a pipeline configuration before triggering. Arguments: `application` (required), `pipeline` (required). Produces a structured checklist covering: pipeline stages and their types, trigger configuration, parameter defaults, notification setup, manual judgment gates, expected artifacts, and last 5 execution outcomes. Designed for pre-deployment sign-off.
 
-- [ ] **`incident-response`** — Investigate a failed or stuck deployment. Arguments: `application` (required), `execution_id` (optional — if omitted, targets the most recent failed execution). Guides the LLM through: execution status and failed stage details, stage error messages and context, server group health across regions, recent scaling activities, and instance-level console output for unhealthy instances. Structured as a diagnostic runbook.
+- [x] **`incident-response`** — Investigate a failed or stuck deployment. Arguments: `application` (required), `execution_id` (optional — if omitted, targets the most recent failed execution). Guides the LLM through: execution status and failed stage details, stage error messages and context, server group health across regions, recent scaling activities, and instance-level console output for unhealthy instances. Structured as a diagnostic runbook.
 
-- [ ] **`pipeline-audit`** — Audit a pipeline configuration for best practices. Arguments: `application` (required), `pipeline` (required). Checks for: missing notification stages, no manual judgment gates before production deploys, hardcoded image references (vs. artifact bindings), unused parameters, missing rollback strategies, stages without timeout configuration, and overly permissive trigger settings.
+- [x] **`pipeline-audit`** — Audit a pipeline configuration for best practices. Arguments: `application` (required), `pipeline` (required). Checks for: missing notification stages, no manual judgment gates before production deploys, hardcoded image references (vs. artifact bindings), unused parameters, missing rollback strategies, stages without timeout configuration, and overly permissive trigger settings.
 
-- [ ] **`infra-overview`** — Summarize the complete infrastructure state for an application. Arguments: `application` (required), `account` (optional — if omitted, covers all accounts). Aggregates: server groups by cluster with instance counts and health, load balancers and their target groups, firewall/security group rules, networks and subnets in use, and current scaling policies.
+- [x] **`infra-overview`** — Summarize the complete infrastructure state for an application. Arguments: `application` (required), `account` (optional — if omitted, covers all accounts). Aggregates: server groups by cluster with instance counts and health, load balancers and their target groups, firewall/security group rules, networks and subnets in use, and current scaling policies.
 
-- [ ] **`rollback-plan`** — Generate a rollback strategy for a deployment. Arguments: `application` (required), `cluster` (required), `account` (required), `region` (required). Uses target server group lookups (previous, ancestor) and scaling activities to propose: which server group to roll back to, expected instance count changes, load balancer re-targeting steps, and verification checks after rollback.
+- [x] **`rollback-plan`** — Generate a rollback strategy for a deployment. Arguments: `application` (required), `cluster` (required), `account` (required), `region` (required). Uses target server group lookups (previous, ancestor) and scaling activities to propose: which server group to roll back to, expected instance count changes, load balancer re-targeting steps, and verification checks after rollback.
 
 Each prompt returns `[]mcp.PromptMessage` with structured text and tool-call suggestions. Requires `server.WithPromptCapabilities(true)` and `s.AddPrompt()`.
 
@@ -173,12 +173,12 @@ Comma-separated, case-insensitive. Invalid group names produce a startup error l
 
 HTTP health and readiness probes for Kubernetes liveness/readiness, Docker `HEALTHCHECK`, and load balancer health checks.
 
-- [ ] **`GET /healthz`** — **Liveness probe**. Returns `200 OK` if the server process is running. No external dependency checks — if the process can respond, it's alive.
+- [x] **`GET /healthz`** — **Liveness probe**. Returns `200 OK` if the server process is running. No external dependency checks — if the process can respond, it's alive.
   ```json
   {"status": "ok", "version": "0.3.3"}
   ```
 
-- [ ] **`GET /readyz`** — **Readiness probe**. Returns `200 OK` if the Gate API is reachable (HEAD request to `GATE_URL` with 5-second timeout). Returns `503 Service Unavailable` if Gate is down or unreachable.
+- [x] **`GET /readyz`** — **Readiness probe**. Returns `200 OK` if the Gate API is reachable (HEAD request to `GATE_URL` with 5-second timeout). Returns `503 Service Unavailable` if Gate is down or unreachable.
   ```json
   {"status": "ready", "gate_url": "http://spin-gate:8084", "gate_reachable": true}
   ```

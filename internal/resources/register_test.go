@@ -440,3 +440,42 @@ func TestParseURIParam_ShortURI(t *testing.T) {
 		t.Errorf("parseURIParam() = %q, want empty", got)
 	}
 }
+
+func TestHandleGetApplication_EmptyName(t *testing.T) {
+	gate, srv := newGateWithHandler(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(`{}`))
+	})
+	defer srv.Close()
+
+	h := handleGetApplication(gate)
+	_, err := h(context.Background(), makeReq("spinnaker://application/"))
+	if err == nil {
+		t.Fatal("expected error for empty name")
+	}
+}
+
+func TestHandleGetExecution_EmptyID(t *testing.T) {
+	gate, srv := newGateWithHandler(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(`{}`))
+	})
+	defer srv.Close()
+
+	h := handleGetExecution(gate)
+	_, err := h(context.Background(), makeReq("spinnaker://execution/"))
+	if err == nil {
+		t.Fatal("expected error for empty id")
+	}
+}
+
+func TestHandleGetAccount_EmptyName(t *testing.T) {
+	gate, srv := newGateWithHandler(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(`{}`))
+	})
+	defer srv.Close()
+
+	h := handleGetAccount(gate)
+	_, err := h(context.Background(), makeReq("spinnaker://account/"))
+	if err == nil {
+		t.Fatal("expected error for empty name")
+	}
+}

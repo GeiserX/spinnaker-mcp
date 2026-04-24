@@ -60,8 +60,12 @@ Create the name of the service account to use
 {{- end }}
 
 {{/*
-Image tag — defaults to Chart.AppVersion
+Image tag — defaults to v + Chart.AppVersion; custom tags used as-is.
 */}}
 {{- define "spinnaker-mcp.imageTag" -}}
-{{- default .Chart.AppVersion .Values.image.tag }}
+{{- if .Values.image.tag -}}
+{{- .Values.image.tag -}}
+{{- else -}}
+v{{- .Chart.AppVersion -}}
+{{- end -}}
 {{- end }}
