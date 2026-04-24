@@ -198,7 +198,7 @@ Kubernetes-native deployment as a standalone service or sidecar container, packa
 
 **Chart structure:**
 
-```
+```text
 helm/spinnaker-mcp/
 ├── Chart.yaml
 ├── values.yaml
