@@ -17,23 +17,26 @@ go build ./cmd/server
 go test ./...
 
 # Run locally
+cp .env.example .env && $EDITOR .env
 export SPINNAKER_URL="https://your-spinnaker-gate"
 go run ./cmd/server
 ```
 
 ## Architecture
-- `cmd/server/` — server entrypoint
+- `cmd/server/` — server entrypoint, MCP server initialization and tool registration
 - `internal/tools/` — MCP tool implementations (applications, pipelines, executions, etc.)
 - `internal/toolsets/` — tool grouping and registration
 - `internal/resources/` — MCP resource definitions
 - `internal/prompts/` — MCP prompt templates
-- `client/` — JavaScript client wrapper for npx
-- `config/` — configuration handling
+- `client/` — Gate API HTTP client with multi-auth support (bearer, basic, x509); also JavaScript wrapper for npx
+- `config/` — environment-based configuration loader
+- `version/` — build-time version injection
 - `helm/` — Helm chart for Kubernetes deployment
 - `glama.json` — Glama MCP registry metadata
 
 ## Key Rules
 - Never hardcode Spinnaker credentials; use environment variables or config files
+- Gate API client supports bearer token, basic auth, and x509 certificate authentication
 - Published to npm, Docker Hub, Official MCP Registry, Glama, and mcp.so
 - Docker images use semver tags, never `:latest`
 - License is GPL-3.0
