@@ -15,7 +15,7 @@ RUN CGO_ENABLED=0 go build -ldflags "-s -w" -o /out/spinnaker-mcp ./cmd/server
 # ───────────────────────────────────────────────
 # Stage 2 – tiny runtime image
 # ───────────────────────────────────────────────
-FROM alpine:3.23
+FROM alpine:3.24
 LABEL io.modelcontextprotocol.server.name="io.github.GeiserX/spinnaker-mcp"
 
 RUN addgroup -S mcp && adduser -S mcp -G mcp
