@@ -20,6 +20,7 @@
   <a href="https://mcp.so/server/spinnaker-mcp"><img src="https://img.shields.io/badge/mcp.so-listed-blue?style=flat-square" alt="mcp.so"/></a>
   <a href="https://github.com/toolsdk-ai/toolsdk-mcp-registry"><img src="https://img.shields.io/badge/ToolSDK-Registry-orange?style=flat-square" alt="ToolSDK Registry"/></a>
   <a href="https://github.com/punkpeye/awesome-mcp-servers#readme"><img src="https://img.shields.io/badge/listed%20on-awesome--mcp--servers-E6522C?style=flat-square" alt="listed on awesome-mcp-servers"/></a>
+  <a href="https://mcpindex.ai/server/io-github-geiserx-spinnaker-mcp"><img src="https://mcpindex.ai/api/v1/badge/io-github-geiserx-spinnaker-mcp" alt="mcpindex"/></a>
 </p>
 
 <p align="center"><strong>A bridge that exposes any Spinnaker instance as an MCP v1 server via the Gate API, written in Go.</strong></p>
