@@ -1,4 +1,6 @@
-# Tools
+# Usage
+
+The server exposes these 37 tools.
 
 | Category | Tool | Description |
 |----------|------|-------------|

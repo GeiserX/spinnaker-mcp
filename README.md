@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/GeiserX/spinnaker-mcp/main/docs/images/banner.svg" alt="Spinnaker MCP banner" width="900"/>
+  <img src="https://raw.githubusercontent.com/GeiserX/spinnaker-mcp/main/docs/images/banner.svg" alt="spinnaker-mcp banner" width="900"/>
 </p>
 
-<h1 align="center">Spinnaker-MCP</h1>
+<h1 align="center">spinnaker-mcp</h1>
 
 <p align="center">
   <a href="https://www.npmjs.com/package/spinnaker-mcp"><img src="https://img.shields.io/npm/v/spinnaker-mcp?style=flat-square&logo=npm" alt="npm"/></a>
@@ -12,7 +12,7 @@
   <a href="https://github.com/GeiserX/spinnaker-mcp/blob/main/LICENSE"><img src="https://img.shields.io/github/license/GeiserX/spinnaker-mcp?style=flat-square" alt="License"/></a>
 </p>
 
-<p align="center"><strong>A bridge that exposes any Spinnaker instance as an MCP v1 server via the Gate API, written in Go.</strong></p>
+<p align="center"><strong>A bridge that exposes any Spinnaker instance as an MCP server via the Gate API, written in Go.</strong></p>
 
 It gives an LLM 37 tools to read and operate Spinnaker: applications, pipelines, executions, strategies and infrastructure.
 
@@ -29,20 +29,30 @@ It gives an LLM 37 tools to read and operate Spinnaker: applications, pipelines,
 
 ## Quick start
 
-```sh
-npx spinnaker-mcp
+Add the server to your MCP client (Claude Code, Claude Desktop, Cursor):
+
+```json
+{
+  "mcpServers": {
+    "spinnaker": {
+      "command": "npx",
+      "args": ["-y", "spinnaker-mcp"],
+      "env": { "GATE_URL": "https://spin-gate.example.com", "GATE_TOKEN": "your-token-here" }
+    }
+  }
+}
 ```
 
-Set `GATE_URL` (and a credential such as `GATE_TOKEN`) first. Docker, local builds and a Claude Code / Claude Desktop config are in [Installation](https://github.com/GeiserX/spinnaker-mcp/blob/main/docs/installation.md).
+Needs Node 18 or newer; the npm package runs the Go binary over stdio. Docker, local builds and the other credentials are in [Getting started](https://github.com/GeiserX/spinnaker-mcp/blob/main/docs/getting-started.md).
 
 ## Documentation
 
-- [Installation](https://github.com/GeiserX/spinnaker-mcp/blob/main/docs/installation.md): npm, Docker, local build, Claude Code / Claude Desktop
+- [Getting started](https://github.com/GeiserX/spinnaker-mcp/blob/main/docs/getting-started.md): npm, Docker, local build, Claude Code / Claude Desktop
 - [Configuration](https://github.com/GeiserX/spinnaker-mcp/blob/main/docs/configuration.md): environment variables and authentication order
-- [Tools](https://github.com/GeiserX/spinnaker-mcp/blob/main/docs/usage.md): all 37 tools
+- [Usage](https://github.com/GeiserX/spinnaker-mcp/blob/main/docs/usage.md): all 37 tools
 - [Development](https://github.com/GeiserX/spinnaker-mcp/blob/main/docs/development.md): testing, contributing, credits
-- [Related projects and listings](https://github.com/GeiserX/spinnaker-mcp/blob/main/docs/related.md)
+- [Related projects](https://github.com/GeiserX/spinnaker-mcp/blob/main/docs/related.md): the other MCP servers and the registry listings
 
 ## License
 
-[GPL-3.0](https://github.com/GeiserX/spinnaker-mcp/blob/main/LICENSE)
+[GPL-3.0-or-later](https://github.com/GeiserX/spinnaker-mcp/blob/main/LICENSE)

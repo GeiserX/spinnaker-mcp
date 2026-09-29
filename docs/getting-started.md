@@ -1,4 +1,6 @@
-# Installation
+# Getting started
+
+Needs a reachable Spinnaker Gate URL and, for the npm package, Node 18 or newer.
 
 ## npm (stdio transport)
 
@@ -18,8 +20,10 @@ This downloads the pre-built Go binary for your platform and runs it with stdio 
 ## Docker
 
 ```sh
-docker run --rm -e GATE_URL=http://spin-gate:8084 -e TRANSPORT=stdio drumsergio/spinnaker-mcp:0.3.1
+docker run -i --rm -e GATE_URL=http://spin-gate:8084 -e TRANSPORT=stdio drumsergio/spinnaker-mcp:v0.3.3
 ```
+
+Image tags carry the `v` prefix (`v0.3.3`). `-i` keeps stdin open, which the stdio transport needs.
 
 ## Local build
 
