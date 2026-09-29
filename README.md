@@ -8,172 +8,41 @@
   <a href="https://www.npmjs.com/package/spinnaker-mcp"><img src="https://img.shields.io/npm/v/spinnaker-mcp?style=flat-square&logo=npm" alt="npm"/></a>
   <a href="https://github.com/GeiserX/spinnaker-mcp/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/GeiserX/spinnaker-mcp/ci.yml?style=flat-square&logo=github&label=CI" alt="CI"/></a>
   <a href="https://codecov.io/gh/GeiserX/spinnaker-mcp"><img src="https://img.shields.io/codecov/c/github/GeiserX/spinnaker-mcp?style=flat-square&logo=codecov&label=Coverage" alt="Coverage"/></a>
-  <img src="https://img.shields.io/badge/Go-1.25-blue?style=flat-square&logo=go&logoColor=white" alt="Go"/>
   <a href="https://hub.docker.com/r/drumsergio/spinnaker-mcp"><img src="https://img.shields.io/docker/pulls/drumsergio/spinnaker-mcp?style=flat-square&logo=docker" alt="Docker Pulls"/></a>
-  <a href="https://github.com/GeiserX/spinnaker-mcp/stargazers"><img src="https://img.shields.io/github/stars/GeiserX/spinnaker-mcp?style=flat-square&logo=github" alt="GitHub Stars"/></a>
   <a href="https://github.com/GeiserX/spinnaker-mcp/blob/main/LICENSE"><img src="https://img.shields.io/github/license/GeiserX/spinnaker-mcp?style=flat-square" alt="License"/></a>
-</p>
-<p align="center">
-  <a href="https://registry.modelcontextprotocol.io"><img src="https://img.shields.io/badge/MCP-Official%20Registry-E6522C?style=flat-square" alt="Official MCP Registry"/></a>
-  <a href="https://glama.ai/mcp/servers/GeiserX/spinnaker-mcp"><img src="https://glama.ai/mcp/servers/GeiserX/spinnaker-mcp/badges/score.svg" alt="Glama MCP Server" /></a>
-  <a href="https://mcpservers.org/servers/geiserx/spinnaker-mcp"><img src="https://img.shields.io/badge/MCPServers.org-listed-green?style=flat-square" alt="MCPServers.org"/></a>
-  <a href="https://mcp.so/server/spinnaker-mcp"><img src="https://img.shields.io/badge/mcp.so-listed-blue?style=flat-square" alt="mcp.so"/></a>
-  <a href="https://github.com/toolsdk-ai/toolsdk-mcp-registry"><img src="https://img.shields.io/badge/ToolSDK-Registry-orange?style=flat-square" alt="ToolSDK Registry"/></a>
-  <a href="https://github.com/punkpeye/awesome-mcp-servers#readme"><img src="https://img.shields.io/badge/listed%20on-awesome--mcp--servers-E6522C?style=flat-square" alt="listed on awesome-mcp-servers"/></a>
-  <a href="https://mcpindex.ai/server/io-github-geiserx-spinnaker-mcp"><img src="https://mcpindex.ai/api/v1/badge/io-github-geiserx-spinnaker-mcp" alt="mcpindex"/></a>
 </p>
 
 <p align="center"><strong>A bridge that exposes any Spinnaker instance as an MCP v1 server via the Gate API, written in Go.</strong></p>
 
----
+It gives an LLM 37 tools to read and operate Spinnaker: applications, pipelines, executions, strategies and infrastructure.
 
-## What you get
+## Features
 
-| Category | Tool | Description |
-|----------|------|-------------|
-| **Applications** | `list_applications` | List all Spinnaker applications |
-| | `get_application` | Get detailed application info (accounts, clusters, attributes) |
-| **Pipelines** | `list_pipelines` | List pipeline configurations for an application |
-| | `get_pipeline` | Get a specific pipeline's full configuration |
-| | `trigger_pipeline` | Trigger a pipeline with optional parameters |
-| | `save_pipeline` | Save/create a pipeline definition |
-| | `update_pipeline` | Update an existing pipeline definition |
-| | `delete_pipeline` | Delete a pipeline definition |
-| | `get_pipeline_history` | Get revision history for a pipeline config |
-| **Executions** | `list_executions` | List recent executions, filterable by status |
-| | `get_execution` | Get full execution details (stages, outputs, timing) |
-| | `search_executions` | Rich search by trigger type, time range, status |
-| | `cancel_execution` | Cancel a running execution with optional reason |
-| | `pause_execution` | Pause a running execution at the current stage |
-| | `resume_execution` | Resume a paused execution |
-| | `restart_stage` | Restart a failed stage within an execution |
-| | `evaluate_expression` | Evaluate a SpEL expression against an execution |
-| **Strategies** | `list_strategies` | List deployment strategy configurations |
-| | `save_strategy` | Create or update a deployment strategy |
-| | `delete_strategy` | Delete a deployment strategy |
-| **Infrastructure** | `list_server_groups` | List server groups (deployment targets) with instance counts |
-| | `list_load_balancers` | List load balancers across all accounts and regions |
-| | `list_clusters` | List cluster names grouped by account |
-| | `get_cluster` | Get cluster details including server groups |
-| | `get_scaling_activities` | Get scaling activities for a cluster |
-| | `get_target_server_group` | Target-based server group lookup (newest, oldest, etc.) |
-| | `list_firewalls` | List all firewalls/security groups across accounts |
-| | `get_firewall` | Get firewall details by account, region, and name |
-| | `get_instance` | Get instance details (health, metadata, launch time) |
-| | `get_console_output` | Get instance console output for debugging |
-| | `find_images` | Search for machine images by tags, region, account |
-| | `get_image_tags` | List image tags for a repository |
-| | `list_networks` | List VPCs/networks by cloud provider |
-| | `list_subnets` | List subnets by cloud provider |
-| | `list_accounts` | List all configured cloud accounts/credentials |
-| | `get_account` | Get account details and permissions |
-| **Tasks** | `get_task` | Get orchestration task status (deploy, resize, rollback) |
+- Applications and pipelines: list, read, trigger, save, update and delete pipelines, with revision history.
+- Executions: list, search by trigger type, time range and status, cancel, pause, resume, restart a stage, evaluate SpEL.
+- Deployment strategies: list, save and delete.
+- Infrastructure: server groups, load balancers, clusters, firewalls, instances and console output, images, networks, subnets, accounts.
+- Orchestration task status (deploy, resize, rollback).
+- Bearer token, basic auth or x509 client certificate against Gate.
+- stdio or HTTP transport; HTTP binds to `127.0.0.1` by default.
+- Ships as an npm package (`npx spinnaker-mcp`), a Docker image and multi-arch Go binaries.
 
-Everything is exposed over JSON-RPC. LLMs and agents can: `initialize` -> `listTools` -> `callTool` and interact with your Spinnaker deployments.
-
----
-
-## Quick-start
-
-### npm (stdio transport)
+## Quick start
 
 ```sh
 npx spinnaker-mcp
 ```
 
-Or install globally:
+Set `GATE_URL` (and a credential such as `GATE_TOKEN`) first. Docker, local builds and a Claude Code / Claude Desktop config are in [Installation](https://github.com/GeiserX/spinnaker-mcp/blob/main/docs/installation.md).
 
-```sh
-npm install -g spinnaker-mcp
-spinnaker-mcp
-```
+## Documentation
 
-This downloads the pre-built Go binary for your platform and runs it with stdio transport.
+- [Installation](https://github.com/GeiserX/spinnaker-mcp/blob/main/docs/installation.md): npm, Docker, local build, Claude Code / Claude Desktop
+- [Configuration](https://github.com/GeiserX/spinnaker-mcp/blob/main/docs/configuration.md): environment variables and authentication order
+- [Tools](https://github.com/GeiserX/spinnaker-mcp/blob/main/docs/usage.md): all 37 tools
+- [Development](https://github.com/GeiserX/spinnaker-mcp/blob/main/docs/development.md): testing, contributing, credits
+- [Related projects and listings](https://github.com/GeiserX/spinnaker-mcp/blob/main/docs/related.md)
 
-### Docker
+## License
 
-```sh
-docker run --rm -e GATE_URL=http://spin-gate:8084 -e TRANSPORT=stdio drumsergio/spinnaker-mcp:0.3.1
-```
-
-### Local build
-
-```sh
-git clone https://github.com/GeiserX/spinnaker-mcp
-cd spinnaker-mcp
-
-cp .env.example .env && $EDITOR .env
-
-go run ./cmd/server
-```
-
-## Configuration
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `GATE_URL` | `http://localhost:8084` | Spinnaker Gate API endpoint (without trailing /) |
-| `GATE_TOKEN` | _(empty)_ | Bearer token for authentication |
-| `GATE_USER` | _(empty)_ | Basic auth username (alternative to token) |
-| `GATE_PASS` | _(empty)_ | Basic auth password |
-| `GATE_CERT_FILE` | _(empty)_ | Path to x509 client certificate (PEM) |
-| `GATE_KEY_FILE` | _(empty)_ | Path to x509 client key (PEM) |
-| `GATE_INSECURE` | `false` | Skip TLS certificate verification |
-| `TRANSPORT` | _(empty = HTTP)_ | Set to `stdio` for stdio transport |
-| `MCP_PORT` | `8085` | HTTP transport port (ignored when TRANSPORT=stdio) |
-| `MCP_BIND_ADDR` | `127.0.0.1` | HTTP transport bind address (set to `0.0.0.0` to listen on all interfaces) |
-
-**Authentication priority**: Bearer token > Basic auth > x509 client cert > No auth.
-
-Put them in a `.env` file (from `.env.example`) or set them in the environment.
-
-## Claude Code / Claude Desktop configuration
-
-```json
-{
-  "mcpServers": {
-    "spinnaker": {
-      "command": "npx",
-      "args": ["-y", "spinnaker-mcp"],
-      "env": {
-        "GATE_URL": "https://spin-gate.example.com",
-        "GATE_TOKEN": "your-token-here"
-      }
-    }
-  }
-}
-```
-
-## Testing
-
-```sh
-go test -v -race ./...
-```
-
-Tested with [Inspector](https://modelcontextprotocol.io/docs/tools/inspector). Before making a PR, make sure this MCP server behaves well via that tool.
-
-## Credits
-
-[Spinnaker](https://spinnaker.io/) -- open-source continuous delivery platform
-
-[MCP-GO](https://github.com/mark3labs/mcp-go) -- Go MCP implementation
-
-[GoReleaser](https://goreleaser.com/) -- painless multi-arch releases
-
-## Maintainers
-
-[@GeiserX](https://github.com/GeiserX).
-
-## Contributing
-
-Feel free to dive in! [Open an issue](https://github.com/GeiserX/spinnaker-mcp/issues/new) or submit PRs.
-
-Spinnaker-MCP follows the [Contributor Covenant](http://contributor-covenant.org/version/2/1/) Code of Conduct.
-
-## Other MCP Servers by GeiserX
-
-- [genieacs-mcp](https://github.com/GeiserX/genieacs-mcp) -- TR-069 device management
-- [cashpilot-mcp](https://github.com/GeiserX/cashpilot-mcp) -- Passive income monitoring
-- [duplicacy-mcp](https://github.com/GeiserX/duplicacy-mcp) -- Backup health monitoring
-- [lynxprompt-mcp](https://github.com/GeiserX/lynxprompt-mcp) -- AI configuration blueprints
-- [pumperly-mcp](https://github.com/GeiserX/pumperly-mcp) -- Fuel and EV charging prices
-- [telegram-archive-mcp](https://github.com/GeiserX/telegram-archive-mcp) -- Telegram message archive
+[GPL-3.0](https://github.com/GeiserX/spinnaker-mcp/blob/main/LICENSE)
