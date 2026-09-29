@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/images/banner.svg" alt="Spinnaker MCP banner" width="900"/>
+  <img src="https://raw.githubusercontent.com/GeiserX/spinnaker-mcp/main/docs/images/banner.svg" alt="Spinnaker MCP banner" width="900"/>
 </p>
 
 <h1 align="center">Spinnaker-MCP</h1>
