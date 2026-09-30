@@ -16,6 +16,8 @@
 
 It gives an LLM 37 tools to read and operate Spinnaker: applications, pipelines, executions, strategies and infrastructure.
 
+![MCP Inspector connected to spinnaker-mcp started with TOOLSETS=readonly: only read tools are listed, and search_executions is selected with its arguments](https://raw.githubusercontent.com/GeiserX/spinnaker-mcp/main/docs/images/screenshots/tools-readonly.png)
+
 ## Features
 
 - Applications and pipelines: list, read, trigger, save, update and delete pipelines, with revision history.
@@ -43,15 +45,17 @@ Add the server to your MCP client (Claude Code, Claude Desktop, Cursor):
 }
 ```
 
-Needs Node 18 or newer; the npm package runs the Go binary over stdio. Docker, local builds and the other credentials are in [Getting started](https://github.com/GeiserX/spinnaker-mcp/blob/main/docs/getting-started.md).
+Needs Node 18 or newer; the npm package runs the Go binary over stdio. Docker, local builds and the other credentials are in [Getting started](https://geiserx.github.io/spinnaker-mcp/getting-started/).
 
 ## Documentation
 
-- [Getting started](https://github.com/GeiserX/spinnaker-mcp/blob/main/docs/getting-started.md): npm, Docker, local build, Claude Code / Claude Desktop
-- [Configuration](https://github.com/GeiserX/spinnaker-mcp/blob/main/docs/configuration.md): environment variables and authentication order
-- [Usage](https://github.com/GeiserX/spinnaker-mcp/blob/main/docs/usage.md): all 37 tools
-- [Development](https://github.com/GeiserX/spinnaker-mcp/blob/main/docs/development.md): testing, contributing, credits
-- [Related projects](https://github.com/GeiserX/spinnaker-mcp/blob/main/docs/related.md): the other MCP servers and the registry listings
+The full documentation is at [geiserx.github.io/spinnaker-mcp](https://geiserx.github.io/spinnaker-mcp/).
+
+- [Getting started](https://geiserx.github.io/spinnaker-mcp/getting-started/): npm, Docker, Helm, local build, and the client configuration
+- [Configuration](https://geiserx.github.io/spinnaker-mcp/configuration/): every environment variable, the read-only toolset, the HTTP endpoints
+- [Usage](https://geiserx.github.io/spinnaker-mcp/usage/): the 37 tools and which ones change Spinnaker, the 10 resources, the 5 prompts
+- [Development](https://geiserx.github.io/spinnaker-mcp/development/): testing, contributing, credits
+- [Related projects](https://geiserx.github.io/spinnaker-mcp/related/): the other MCP servers and the registry listings
 
 ## License
 

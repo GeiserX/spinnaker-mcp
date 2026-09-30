@@ -1,0 +1,125 @@
+/* docs/stylesheets/theme.css: the site takes its colours from the banner.
+ *
+ * banner.svg paints a ship's hull in #0f2742 on a #bcd8ec sky, the name in
+ * #f3ead8, the tagline in #b5cde3, a #e9c46a gold line and hull number, a
+ * #c8372d boot stripe and a #1b5a8a sea. The header and the dark page use the
+ * hull; links and the accent use the gold. mkdocs.yml sets primary and accent
+ * to custom, so nothing is painted until these variables exist.
+ */
+:root {
+  --md-primary-fg-color: #0f2742; /* banner hull, used as the header */
+  --md-primary-fg-color--light: #16304f;
+  --md-primary-fg-color--dark: #06111f; /* banner anchor ring */
+  --md-primary-bg-color: #f3ead8; /* banner name, text on the header */
+  --md-primary-bg-color--light: #b5cde3; /* banner tagline */
+
+  --md-accent-fg-color: #e9c46a; /* banner gold line */
+  --md-accent-fg-color--transparent: #e9c46a1a;
+}
+
+/* Dark scheme: the page body uses the hull colour too, so the header and the
+   page read as one surface. #e9c46a on #0f2742 is 9.0:1. */
+[data-md-color-scheme="slate"] {
+  --md-default-bg-color: #0f2742;
+  --md-code-bg-color: #16304f;
+  --md-typeset-a-color: #e9c46a;
+}
+
+/* Light scheme: the gold on white is 1.7:1, too faint for text. Links take
+   the banner's sea blue (7.3:1), hover takes the boot stripe red (5.2:1). */
+[data-md-color-scheme="default"] {
+  --md-typeset-a-color: #1b5a8a;
+  --md-accent-fg-color: #c8372d;
+  --md-accent-fg-color--transparent: #c8372d1a;
+}
+
+/* Fixed logo size so it does not crowd the site name. */
+.md-header__button.md-logo img,
+.md-header__button.md-logo svg {
+  height: 1.6rem;
+  width: 1.6rem;
+}
+
+/* The site name, set the way banner.svg sets it: a heavy serif in the
+   banner's cream. Only the first topic is styled; Material puts the page
+   title in a second .md-header__topic and swaps them on scroll. */
+.md-header__topic:first-child .md-ellipsis {
+  color: #f3ead8;
+  font-family: Georgia, "Times New Roman", serif;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+/* Keep the mark and the name close, so they read as one unit. */
+.md-header__button.md-logo {
+  padding-right: 0.2rem;
+}
+
+.md-header__title {
+  margin-left: 0.2rem;
+}
+
+/* Buttons. Material paints .md-button in the header colour, which on the
+   dark page is also the page background. Outline buttons take the link
+   colour; on hover the text takes the page colour (navy on gold 9.0:1,
+   white on sea blue 7.3:1). */
+.md-typeset .md-button {
+  color: var(--md-typeset-a-color);
+  border-color: var(--md-typeset-a-color);
+  border-radius: 0.5rem;
+}
+
+.md-typeset .md-button:focus,
+.md-typeset .md-button:hover {
+  background-color: var(--md-typeset-a-color);
+  border-color: var(--md-typeset-a-color);
+  color: var(--md-default-bg-color);
+}
+
+.md-typeset .md-button--primary,
+.md-typeset .md-button--primary:focus,
+.md-typeset .md-button--primary:hover {
+  /* Navy on gold is 9.0:1 in both schemes. */
+  background: #e9c46a;
+  border-color: transparent;
+  color: #0f2742;
+}
+
+.md-typeset .md-button--primary:focus,
+.md-typeset .md-button--primary:hover {
+  box-shadow: 0 0.2rem 0.8rem #e9c46a59;
+}
+
+/* Grid cards: the border picks up the accent on hover, matching the links. */
+.md-typeset .grid.cards > ul > li,
+.md-typeset .grid > .card {
+  border-radius: 0.5rem;
+}
+
+.md-typeset .grid.cards > ul > li:focus-within,
+.md-typeset .grid.cards > ul > li:hover,
+.md-typeset .grid > .card:focus-within,
+.md-typeset .grid > .card:hover {
+  border-color: var(--md-accent-fg-color);
+}
+
+/* The home page keeps an H1 for search, screen readers and the browser tab.
+   The banner under it already shows the name, so the H1 is hidden visually.
+   Use it as: # spinnaker-mcp { .sm-visually-hidden } */
+.md-typeset h1.sm-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Variable, tool and URI names in tables, such as GATE_CERT_FILE or
+   spinnaker://application/{name}/load-balancers, must not wrap mid-word. */
+.md-typeset table:not([class]) code {
+  word-break: normal;
+}

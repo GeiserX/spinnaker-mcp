@@ -1,6 +1,9 @@
 # Usage
 
-The server exposes these 37 tools.
+The server exposes 37 tools, 10 resources and 5 prompts. [Toolsets](configuration.md#toolsets) choose which
+tools are registered; resources and prompts are always there.
+
+## Tools
 
 | Category | Tool | Description |
 |----------|------|-------------|
@@ -42,4 +45,43 @@ The server exposes these 37 tools.
 | | `get_account` | Get account details and permissions |
 | **Tasks** | `get_task` | Get orchestration task status (deploy, resize, rollback) |
 
-Everything is exposed over JSON-RPC. LLMs and agents can: `initialize` -> `listTools` -> `callTool` and interact with your Spinnaker deployments.
+Ten tools change Spinnaker: `trigger_pipeline`, `save_pipeline`, `update_pipeline`, `delete_pipeline`,
+`cancel_execution`, `pause_execution`, `resume_execution`, `restart_stage`, `save_strategy` and
+`delete_strategy`. The other 27 only read. `evaluate_expression` sends the expression to Gate in a POST but
+changes nothing, so it is marked read-only. Every tool carries MCP annotations (`readOnlyHint`,
+`destructiveHint`), so a client that reads them can ask before the ten, and treats `delete_pipeline` and
+`delete_strategy` as destructive.
+
+## Resources
+
+All return JSON and only read.
+
+| URI | Returns |
+|-----|---------|
+| `spinnaker://applications` | All applications with metadata |
+| `spinnaker://accounts` | All cloud accounts with provider type and environment |
+| `spinnaker://application/{name}` | Application details: accounts, clusters, attributes |
+| `spinnaker://application/{name}/pipelines` | All pipeline configurations of the application |
+| `spinnaker://application/{name}/executions` | Recent pipeline executions with status and timing |
+| `spinnaker://application/{name}/clusters` | Clusters grouped by account |
+| `spinnaker://application/{name}/server-groups` | Server groups with instance counts, image and capacity |
+| `spinnaker://application/{name}/load-balancers` | Load balancers across all accounts and regions |
+| `spinnaker://execution/{id}` | Full execution details: stages, outputs, timing |
+| `spinnaker://account/{name}` | Account details: regions, permissions, provider metadata |
+
+## Prompts
+
+A prompt returns instructions for the assistant; it calls nothing by itself.
+
+| Prompt | Arguments | Asks the assistant to |
+|--------|-----------|-----------------------|
+| `deploy-review` | `application`, `pipeline` | Review a pipeline configuration before triggering a deployment |
+| `incident-response` | `application`, `execution_id` (optional; the most recent failed execution if omitted) | Investigate a failed or stuck deployment |
+| `pipeline-audit` | `application`, `pipeline` | Audit a pipeline configuration for best practices |
+| `infra-overview` | `application`, `account` (optional; all accounts if omitted) | Summarize the complete infrastructure state for an application |
+| `rollback-plan` | `application`, `cluster`, `account`, `region` | Generate a rollback strategy for a deployment |
+
+## On the wire
+
+Everything is JSON-RPC 2.0. A client sends `initialize`, lists what is there with `tools/list`,
+`resources/list` and `prompts/list`, then calls `tools/call`, `resources/read` or `prompts/get`.

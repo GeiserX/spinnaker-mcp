@@ -12,7 +12,49 @@
 | `TRANSPORT` | _(empty = HTTP)_ | Set to `stdio` for stdio transport |
 | `MCP_PORT` | `8085` | HTTP transport port (ignored when TRANSPORT=stdio) |
 | `MCP_BIND_ADDR` | `127.0.0.1` | HTTP transport bind address (set to `0.0.0.0` to listen on all interfaces) |
+| `TOOLSETS` | _(empty = all)_ | Tool groups to register, see [Toolsets](#toolsets) |
 
 **Authentication priority**: Bearer token > Basic auth > x509 client cert > No auth.
 
-Put them in a `.env` file (from `.env.example`) or set them in the environment.
+Put them in a `.env` file (from `.env.example`) or set them in the environment. The npm package always runs
+with `TRANSPORT=stdio`, and the Docker image sets `TRANSPORT=stdio` unless you override it.
+
+## Toolsets
+
+`TOOLSETS`, or the `--toolsets=` flag (the flag wins), chooses which tools the server registers. A tool that
+is not registered does not exist for the client. Resources and prompts are registered whatever it says.
+
+| Value | Tools |
+|-------|-------|
+| `all` (default) | all 37 |
+| `readonly` | the 27 that only read |
+| `mutating` | the 10 that change Spinnaker, the two deletes included |
+| `applications` | 2 |
+| `pipelines` | 7 |
+| `executions` | 8 |
+| `strategies` | 3 |
+| `infrastructure` | 16 |
+| `tasks` | 1 |
+
+Groups combine with commas: `TOOLSETS=pipelines,executions`. `all`, `readonly` and `mutating` stand alone;
+combined with each other or with a group, the server exits at start with `Invalid toolsets`. To keep an
+assistant from changing anything, add `"TOOLSETS": "readonly"` to the `env` block of your client
+configuration. [Usage](usage.md#tools) lists which tools change Spinnaker.
+
+## HTTP transport
+
+When `TRANSPORT` is anything but `stdio`, the server listens on `MCP_BIND_ADDR:MCP_PORT`
+(`127.0.0.1:8085` by default) and serves:
+
+| Path | Answers |
+|------|---------|
+| `/mcp` | MCP over streamable HTTP |
+| `/healthz` | `200` with `{"status":"ok","version":"..."}` |
+| `/readyz` | `200` when Gate answers a `HEAD /applications` within 5 s with any status below 500, otherwise `503`; the body carries `gate_url` and `gate_reachable` |
+
+`/readyz` proves Gate is reachable, not that the credentials work: a `401` from Gate still counts as ready.
+
+`/mcp` has no authentication of its own. Anyone who reaches it acts with the Gate credentials the server
+holds, so keep the default loopback address, or put an authenticating proxy in front and consider
+`TOOLSETS=readonly`. In Docker, `127.0.0.1` is the container's own loopback: run the HTTP transport with
+`-e TRANSPORT=http -e MCP_BIND_ADDR=0.0.0.0 -p 127.0.0.1:8085:8085` so only the host reaches it.
