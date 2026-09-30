@@ -24,3 +24,4 @@ node_modules/
 .mcpregistry_*
 /server
 .omc/
+site/
