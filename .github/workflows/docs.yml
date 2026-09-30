@@ -1,17 +1,9 @@
 name: Docs
 
-# Copy to .github/workflows/docs.yml. Before the first run, set the repository's
-# Pages source to "GitHub Actions": Settings -> Pages -> Source, or
-# `gh api -X POST repos/GeiserX/<repo>/pages -f build_type=workflow` for a repo
-# with no Pages yet. For a repo already publishing from a branch the API is a
-# PUT, and its docs list `source.branch` and `source.path` as required, so the
-# bare `-f build_type=workflow` PUT may 422: try it on CashPilot first and
-# record which form worked. A deploy while the source is still a branch is
-# expected to fail; that is the test that the switch happened.
-#
-# Never for a repo whose gh-pages branch holds a Helm chart index (index.yaml,
-# artifacthub-repo.yml): Pumperly, LynxPrompt, genieacs-container,
-# duplicacy-container. Those use docs-pages-helm.yml instead.
+# The repository's Pages source must be "GitHub Actions" (Settings -> Pages ->
+# Source, or `gh api -X POST repos/GeiserX/spinnaker-mcp/pages
+# -f build_type=workflow` when Pages is not set up yet). A deploy while the
+# source is a branch fails; that is the sign the source was changed back.
 #
 # Pull requests that touch the docs run the strict build, so a broken link, a
 # missing page or an unreachable page fails the check instead of reaching the
