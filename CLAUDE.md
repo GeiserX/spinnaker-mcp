@@ -28,7 +28,7 @@ go run ./cmd/server
 - `internal/toolsets/` — tool grouping and registration
 - `internal/resources/` — MCP resource definitions
 - `internal/prompts/` — MCP prompt templates
-- `client/` — Gate API HTTP client with multi-auth support (bearer, basic, x509); also JavaScript wrapper for npx
+- `client/` — Gate API HTTP client with multi-auth support (bearer, basic, session cookie, x509); also JavaScript wrapper for npx
 - `config/` — environment-based configuration loader
 - `version/` — build-time version injection
 - `helm/` — Helm chart for Kubernetes deployment
@@ -36,7 +36,7 @@ go run ./cmd/server
 
 ## Key Rules
 - Never hardcode Spinnaker credentials; use environment variables or config files
-- Gate API client supports bearer token, basic auth, and x509 certificate authentication
+- Gate API client supports bearer token, basic auth, x509 certificate and session cookie authentication; the cookie path (`spinnaker-mcp login`) is for a Gate behind SSO, which accepts nothing else
 - Published to npm, Docker Hub, Official MCP Registry, Glama, and mcp.so
 - Docker images use semver tags, never `:latest`
 - License is GPL-3.0

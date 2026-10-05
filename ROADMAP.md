@@ -13,7 +13,7 @@ This document outlines the planned features and improvements for Spinnaker-MCP. 
 - Infrastructure: server groups, load balancers, clusters, scaling activities, target server groups, firewalls, instances, console output, images, image tags, networks, subnets, accounts
 - Tasks: get status
 
-**Authentication**: Bearer token, basic auth, x509 client certificates
+**Authentication**: Bearer token, basic auth, x509 client certificates, session cookie for a Gate behind SSO (`spinnaker-mcp login`)
 
 **Transports**: stdio, Streamable HTTP
 
@@ -339,6 +339,7 @@ The following areas cover the remaining ~110 Gate API endpoints. They are docume
 ### Authentication
 
 - [x] Bearer token, basic auth, x509 client certificates
+- [x] Session cookie for a Gate behind SSO, with `spinnaker-mcp login` to capture and verify it
 - [ ] OAuth2/OIDC token refresh — Automatic token refresh for OAuth-based auth
 - [ ] Cookie-based auth — Support session cookies from browser SSO flows
 

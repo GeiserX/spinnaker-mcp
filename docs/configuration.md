@@ -9,15 +9,44 @@
 | `GATE_CERT_FILE` | _(empty)_ | Path to x509 client certificate (PEM) |
 | `GATE_KEY_FILE` | _(empty)_ | Path to x509 client key (PEM) |
 | `GATE_INSECURE` | `false` | Skip TLS certificate verification |
+| `GATE_COOKIE` | _(empty)_ | Session cookie for a Gate behind SSO, `SESSION=...` or the bare value, see [Gate behind SSO](#gate-behind-sso) |
+| `GATE_COOKIE_FILE` | _(per host)_ | File holding that cookie; default `$XDG_CONFIG_HOME/spinnaker-mcp/cookies/<host>`, which `spinnaker-mcp login` writes |
 | `TRANSPORT` | _(empty = HTTP)_ | Set to `stdio` for stdio transport |
 | `MCP_PORT` | `8085` | HTTP transport port (ignored when TRANSPORT=stdio) |
 | `MCP_BIND_ADDR` | `127.0.0.1` | HTTP transport bind address (set to `0.0.0.0` to listen on all interfaces) |
 | `TOOLSETS` | _(empty = all)_ | Tool groups to register, see [Toolsets](#toolsets) |
 
-**Authentication priority**: Bearer token > Basic auth > x509 client cert > No auth.
+**Authentication priority**: Bearer token > Basic auth > Session cookie > No auth. An x509 client certificate
+(`GATE_CERT_FILE` and `GATE_KEY_FILE`) is presented on top of whichever of those applies.
 
 Put them in a `.env` file (from `.env.example`) or set them in the environment. The npm package always runs
 with `TRANSPORT=stdio`, and the Docker image sets `TRANSPORT=stdio` unless you override it.
+
+## Gate behind SSO
+
+A Gate that sits behind a single sign-on login (OAuth2, SAML) accepts no token and no password from an API
+client: every call without its browser session is answered with a redirect to `/login`, and the server
+reports it as `gate requires a login session`. What Gate does accept is the `SESSION` cookie it sets in the
+browser after you sign in, so the server replays that cookie.
+
+Sign in once per Gate:
+
+```sh
+spinnaker-mcp login --gate=https://spin-gate.example.com      # or: npx -y spinnaker-mcp login --gate=...
+```
+
+It opens the Gate login page in your browser. Sign in, then copy the `SESSION` cookie for the Gate host
+(browser DevTools, Application tab, Cookies) and paste it at the prompt. The command checks the cookie
+against `GET /auth/user`, prints the user it belongs to, and stores it with mode `0600` in
+`$XDG_CONFIG_HOME/spinnaker-mcp/cookies/<host>` (`~/.config/...` by default). From then on the server
+picks it up on its own whenever `GATE_URL` points at that host, so the client configuration needs only
+`GATE_URL`. When the session expires the tools fail with the same `gate requires a login session` message:
+run `login` again.
+
+`--cookie=VALUE` skips the prompt, `--cookie-file=PATH` stores it elsewhere, `--no-browser` only prints
+the URL. `GATE_COOKIE` and `GATE_COOKIE_FILE` set the cookie directly for a server that cannot run
+`login`, for example in a container. The cookie is a credential: whoever holds it is you on that Gate
+until it expires, so keep it out of shared configuration and version control.
 
 ## Toolsets
 

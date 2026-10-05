@@ -74,4 +74,6 @@ only if the clients must change things, and limit who reaches the Service.
 }
 ```
 
-See [Configuration](configuration.md) for the environment variables.
+See [Configuration](configuration.md) for the environment variables. Behind a single sign-on login Gate takes no
+token: leave `GATE_TOKEN` out and run `npx -y spinnaker-mcp login --gate=https://spin-gate.example.com` once, see
+[Gate behind SSO](configuration.md#gate-behind-sso).
