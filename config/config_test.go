@@ -108,3 +108,18 @@ func TestLoadGateConfig_CookieFromDefaultFile(t *testing.T) {
 		t.Error("DefaultCookieFile must be empty for a URL without a host")
 	}
 }
+
+func TestLoadGateConfig_NoCookieWithoutHostOrHome(t *testing.T) {
+	t.Setenv("GATE_COOKIE", "")
+	t.Setenv("GATE_COOKIE_FILE", "")
+	t.Setenv("XDG_CONFIG_HOME", "")
+	t.Setenv("GATE_URL", "not a url")
+	if got := LoadGateConfig().Cookie; got != "" {
+		t.Errorf("a Gate URL without a host must yield no cookie, got %q", got)
+	}
+	t.Setenv("GATE_URL", "https://gate.example.com")
+	t.Setenv("HOME", "")
+	if got := DefaultCookieFile("https://gate.example.com"); got != "" {
+		t.Errorf("without HOME and XDG_CONFIG_HOME there is no default file, got %q", got)
+	}
+}

@@ -1170,14 +1170,17 @@ func TestDo_LoginRedirectIsErrLoginRequired(t *testing.T) {
 }
 
 func TestDo_OtherRedirectKeepsGenericError(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		http.Redirect(w, r, "/somewhere-else", http.StatusFound)
-	}))
-	defer srv.Close()
-	gate := newTestGate(t, srv.URL)
-	_, err := gate.ListApplications(context.Background())
-	if err == nil || errors.Is(err, ErrLoginRequired) || !strings.Contains(err.Error(), "unexpected redirect 302") {
-		t.Fatalf("expected the generic redirect error, got %v", err)
+	for _, loc := range []string{"/somewhere-else", "::not-a-url"} {
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Location", loc)
+			w.WriteHeader(http.StatusFound)
+		}))
+		gate := newTestGate(t, srv.URL)
+		_, err := gate.ListApplications(context.Background())
+		srv.Close()
+		if err == nil || errors.Is(err, ErrLoginRequired) || !strings.Contains(err.Error(), "unexpected redirect 302") {
+			t.Fatalf("location %q: expected the generic redirect error, got %v", loc, err)
+		}
 	}
 }
 

@@ -109,3 +109,91 @@ func TestRunLogin_InvalidGateURL(t *testing.T) {
 		t.Errorf("exit %d, want 2", code)
 	}
 }
+
+func TestRunLogin_OpensBrowserWhenPrompting(t *testing.T) {
+	srv := ssoGate(t)
+	defer srv.Close()
+	var opened []string
+	orig := startCommand
+	startCommand = func(name string, args ...string) error {
+		opened = append(opened, name+" "+strings.Join(args, " "))
+		return nil
+	}
+	defer func() { startCommand = orig }()
+
+	var stderr bytes.Buffer
+	code := runLogin([]string{"--gate=" + srv.URL, "--cookie-file=" + filepath.Join(t.TempDir(), "c")}, strings.NewReader("good\n"), &stderr)
+	if code != 0 {
+		t.Fatalf("exit %d, stderr: %s", code, stderr.String())
+	}
+	if len(opened) != 1 || !strings.HasSuffix(opened[0], srv.URL+"/login") {
+		t.Errorf("expected one browser launch to the login page, got %v", opened)
+	}
+}
+
+func TestOpenBrowser_ReportsLaunchFailure(t *testing.T) {
+	orig := startCommand
+	startCommand = func(string, ...string) error { return os.ErrNotExist }
+	defer func() { startCommand = orig }()
+	openBrowser("https://gate.example.com/login") // must not panic or exit; the error goes to stderr
+}
+
+func TestBrowserCommand(t *testing.T) {
+	cases := map[string]string{"darwin": "open", "windows": "rundll32", "linux": "xdg-open", "freebsd": "xdg-open"}
+	for goos, want := range cases {
+		name, args := browserCommand(goos, "https://x/login")
+		if name != want || args[len(args)-1] != "https://x/login" {
+			t.Errorf("browserCommand(%s) = %s %v", goos, name, args)
+		}
+	}
+}
+
+func TestRunLogin_NoCookieOnStdin(t *testing.T) {
+	srv := ssoGate(t)
+	defer srv.Close()
+	for _, in := range []string{"", "   \n"} {
+		var stderr bytes.Buffer
+		code := runLogin([]string{"--gate=" + srv.URL, "--no-browser", "--cookie-file=" + filepath.Join(t.TempDir(), "c")}, strings.NewReader(in), &stderr)
+		if code != 1 || !strings.Contains(stderr.String(), "no cookie given") {
+			t.Errorf("stdin %q: exit %d, stderr %s", in, code, stderr.String())
+		}
+	}
+}
+
+func TestRunLogin_BadFlag(t *testing.T) {
+	var stderr bytes.Buffer
+	if code := runLogin([]string{"--definitely-not-a-flag"}, strings.NewReader(""), &stderr); code != 2 {
+		t.Errorf("exit %d, want 2", code)
+	}
+}
+
+func TestRunLogin_UnwritableCookieFile(t *testing.T) {
+	srv := ssoGate(t)
+	defer srv.Close()
+	dir := t.TempDir()
+	blocker := filepath.Join(dir, "file")
+	if err := os.WriteFile(blocker, []byte("x"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	var stderr bytes.Buffer
+	// the parent of the cookie path is a regular file, so MkdirAll fails
+	code := runLogin([]string{"--gate=" + srv.URL, "--cookie=good", "--no-browser", "--cookie-file=" + filepath.Join(blocker, "cookie")}, strings.NewReader(""), &stderr)
+	if code != 1 || !strings.Contains(stderr.String(), "creating") {
+		t.Errorf("exit %d, stderr %s", code, stderr.String())
+	}
+	// the cookie path itself is a directory, so WriteFile fails
+	if err := writeCookieFile(dir, "SESSION=x"); err == nil || !strings.Contains(err.Error(), "writing") {
+		t.Errorf("expected a write error for a directory path, got %v", err)
+	}
+}
+
+func TestEnvOr(t *testing.T) {
+	t.Setenv("SPINNAKER_MCP_TEST_ENVOR", "")
+	if got := envOr("SPINNAKER_MCP_TEST_ENVOR", "d"); got != "d" {
+		t.Errorf("got %q, want default", got)
+	}
+	t.Setenv("SPINNAKER_MCP_TEST_ENVOR", "v")
+	if got := envOr("SPINNAKER_MCP_TEST_ENVOR", "d"); got != "v" {
+		t.Errorf("got %q, want v", got)
+	}
+}

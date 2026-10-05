@@ -123,17 +123,28 @@ func writeCookieFile(path, value string) error {
 	return os.Chmod(path, 0o600)
 }
 
-func openBrowser(u string) {
-	var cmd *exec.Cmd
-	switch runtime.GOOS {
+// startCommand launches a detached command; tests replace it.
+var startCommand = func(name string, args ...string) error {
+	return exec.Command(name, args...).Start()
+}
+
+// browserCommand returns the OS command that opens a URL in the default browser.
+func browserCommand(goos, u string) (string, []string) {
+	switch goos {
 	case "darwin":
-		cmd = exec.Command("open", u)
+		return "open", []string{u}
 	case "windows":
-		cmd = exec.Command("rundll32", "url.dll,FileProtocolHandler", u)
+		return "rundll32", []string{"url.dll,FileProtocolHandler", u}
 	default:
-		cmd = exec.Command("xdg-open", u)
+		return "xdg-open", []string{u}
 	}
-	_ = cmd.Start()
+}
+
+func openBrowser(u string) {
+	name, args := browserCommand(runtime.GOOS, u)
+	if err := startCommand(name, args...); err != nil {
+		fmt.Fprintf(os.Stderr, "login: could not open a browser (%v); open the URL yourself\n", err)
+	}
 }
 
 func envOr(k, d string) string {
