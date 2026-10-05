@@ -25,7 +25,7 @@ It gives an LLM 37 tools to read and operate Spinnaker: applications, pipelines,
 - Deployment strategies: list, save and delete.
 - Infrastructure: server groups, load balancers, clusters, firewalls, instances and console output, images, networks, subnets, accounts.
 - Orchestration task status (deploy, resize, rollback).
-- Bearer token, basic auth or x509 client certificate against Gate.
+- Bearer token, basic auth, x509 client certificate, or the session cookie of a Gate behind SSO (`spinnaker-mcp login`).
 - stdio or HTTP transport; HTTP binds to `127.0.0.1` by default.
 - Ships as an npm package (`npx spinnaker-mcp`), a Docker image and multi-arch Go binaries.
 

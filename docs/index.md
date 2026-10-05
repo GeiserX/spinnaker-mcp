@@ -74,13 +74,13 @@ flowchart LR
     G[Spinnaker Gate<br/>port 8084]
     SP[Spinnaker services]
     C <-->|MCP over stdio,<br/>or HTTP on /mcp| S
-    S <-->|HTTP, token, basic auth<br/>or x509 client cert| G
+    S <-->|HTTP, token, basic auth,<br/>session cookie or x509 client cert| G
     G <--> SP
 ```
 
 - Over stdio the client starts the binary itself. `npx -y spinnaker-mcp` downloads the binary for your platform and runs it that way, and the Docker image defaults to stdio too.
 - Over HTTP the binary serves `/mcp`, `/healthz` and `/readyz` on `127.0.0.1:8085`. The Helm chart runs it this way in a pod. See [HTTP transport](configuration.md#http-transport).
-- Every call runs as the Gate identity you configure: a bearer token first, then basic auth, then an x509 client certificate. Spinnaker's own access rules apply to that identity.
+- Every call runs as the Gate identity you configure: a bearer token first, then basic auth, then the session cookie `spinnaker-mcp login` stores for a Gate behind SSO, with an x509 client certificate on top when configured. Spinnaker's own access rules apply to that identity.
 - Binaries for Linux, macOS and Windows on amd64 and arm64, the npm package `spinnaker-mcp`, the Docker image `drumsergio/spinnaker-mcp` and a Helm chart in the repository, all at one version. Install paths are on [Getting started](getting-started.md).
 
 ## What it does not do

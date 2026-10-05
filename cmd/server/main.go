@@ -23,6 +23,10 @@ import (
 func main() {
 	var toolsetsFlag string
 
+	if len(os.Args) > 1 && os.Args[1] == "login" {
+		os.Exit(runLogin(os.Args[2:], os.Stdin, os.Stderr))
+	}
+
 	for _, arg := range os.Args[1:] {
 		switch {
 		case arg == "--version" || arg == "-v":
@@ -52,9 +56,13 @@ func main() {
 		CertFile: cfg.CertFile,
 		KeyFile:  cfg.KeyFile,
 		Insecure: cfg.Insecure,
+		Cookie:   cfg.Cookie,
 	})
 	if err != nil {
 		log.Fatalf("Failed to create Gate client: %v", err)
+	}
+	if cfg.Token == "" && cfg.User == "" && cfg.Cookie != "" {
+		log.Println("Gate auth: session cookie")
 	}
 
 	// Resolve toolsets
@@ -177,6 +185,8 @@ func printHelp() {
 	fmt.Println("spinnaker-mcp " + version.String())
 	fmt.Println()
 	fmt.Println("Usage: spinnaker-mcp [flags]")
+	fmt.Println("       spinnaker-mcp login [--gate=URL] [--cookie=VALUE] [--cookie-file=PATH] [--no-browser]")
+	fmt.Println("                              Sign in to a Gate behind SSO and store its session cookie")
 	fmt.Println()
 	fmt.Println("Flags:")
 	fmt.Println("  --version, -v          Print version and exit")
@@ -204,6 +214,8 @@ func printHelp() {
 	fmt.Println("  GATE_CERT_FILE         Path to x509 client certificate (PEM)")
 	fmt.Println("  GATE_KEY_FILE          Path to x509 client key (PEM)")
 	fmt.Println("  GATE_INSECURE          Skip TLS certificate verification (default: false)")
+	fmt.Println("  GATE_COOKIE            Session cookie for a Gate behind SSO (SESSION=... or the bare value)")
+	fmt.Println("  GATE_COOKIE_FILE       File holding that cookie (default: $XDG_CONFIG_HOME/spinnaker-mcp/cookies/<host>)")
 	fmt.Println("  TRANSPORT              'stdio' for stdio transport (default: HTTP)")
 	fmt.Println("  MCP_PORT               HTTP listen port (default: 8085)")
 	fmt.Println("  MCP_BIND_ADDR          HTTP bind address (default: 127.0.0.1)")

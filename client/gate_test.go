@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -1111,5 +1112,94 @@ func TestGateClient_GetAccount(t *testing.T) {
 	}
 	if string(resp) != `{"name":"prod","type":"aws"}` {
 		t.Errorf("unexpected response: %s", string(resp))
+	}
+}
+
+func TestNewGate_CookieAuth(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("Cookie") != "SESSION=abc123" {
+			t.Errorf("expected SESSION cookie, got %q", r.Header.Get("Cookie"))
+			http.Redirect(w, r, "/login", http.StatusFound)
+			return
+		}
+		if r.Header.Get("Authorization") != "" {
+			t.Error("cookie auth must not add an Authorization header")
+		}
+		w.Write([]byte(`[]`))
+	}))
+	defer srv.Close()
+
+	for _, raw := range []string{"abc123", "SESSION=abc123", "  SESSION=abc123\n"} {
+		gate, err := NewGate(GateOptions{BaseURL: srv.URL, Cookie: raw})
+		if err != nil {
+			t.Fatalf("NewGate(%q): %v", raw, err)
+		}
+		if _, err := gate.ListApplications(context.Background()); err != nil {
+			t.Errorf("cookie %q: %v", raw, err)
+		}
+	}
+}
+
+func TestNewGate_TokenWinsOverCookie(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("Authorization") != "Bearer tok" || r.Header.Get("Cookie") != "" {
+			t.Errorf("expected bearer only, got auth=%q cookie=%q", r.Header.Get("Authorization"), r.Header.Get("Cookie"))
+		}
+		w.Write([]byte(`[]`))
+	}))
+	defer srv.Close()
+	gate, _ := NewGate(GateOptions{BaseURL: srv.URL, Token: "tok", Cookie: "abc"})
+	if _, err := gate.ListApplications(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestDo_LoginRedirectIsErrLoginRequired(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "https://gate.example.com/login", http.StatusFound)
+	}))
+	defer srv.Close()
+	gate := newTestGate(t, srv.URL)
+	_, err := gate.ListApplications(context.Background())
+	if !errors.Is(err, ErrLoginRequired) {
+		t.Fatalf("expected ErrLoginRequired, got %v", err)
+	}
+	if !strings.Contains(err.Error(), "spinnaker-mcp login") {
+		t.Errorf("error should tell the user how to fix it: %v", err)
+	}
+}
+
+func TestDo_OtherRedirectKeepsGenericError(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "/somewhere-else", http.StatusFound)
+	}))
+	defer srv.Close()
+	gate := newTestGate(t, srv.URL)
+	_, err := gate.ListApplications(context.Background())
+	if err == nil || errors.Is(err, ErrLoginRequired) || !strings.Contains(err.Error(), "unexpected redirect 302") {
+		t.Fatalf("expected the generic redirect error, got %v", err)
+	}
+}
+
+func TestCurrentUser(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/auth/user" {
+			t.Errorf("unexpected path %s", r.URL.Path)
+		}
+		w.Write([]byte(`{"username":"me"}`))
+	}))
+	defer srv.Close()
+	body, err := newTestGate(t, srv.URL).CurrentUser(context.Background())
+	if err != nil || string(body) != `{"username":"me"}` {
+		t.Fatalf("got %s, %v", body, err)
+	}
+}
+
+func TestNormalizeCookie(t *testing.T) {
+	cases := map[string]string{"": "", "abc": "SESSION=abc", " abc \n": "SESSION=abc", "SESSION=abc": "SESSION=abc", "a=1; b=2": "a=1; b=2"}
+	for in, want := range cases {
+		if got := NormalizeCookie(in); got != want {
+			t.Errorf("NormalizeCookie(%q) = %q, want %q", in, got, want)
+		}
 	}
 }

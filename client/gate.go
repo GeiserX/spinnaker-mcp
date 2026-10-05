@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -43,6 +44,40 @@ type noAuth struct{}
 
 func (a *noAuth) apply(_ *http.Request) {}
 
+// cookieAuth sends a browser session cookie. It is how a Gate behind SSO (OAuth2, SAML)
+// authenticates API calls: the user signs in once in a browser and the SESSION cookie
+// Gate sets there is replayed on every request.
+type cookieAuth struct{ cookie string }
+
+func (a *cookieAuth) apply(req *http.Request) {
+	req.Header.Set("Cookie", a.cookie)
+}
+
+// ErrLoginRequired is returned when Gate answers an API call with a redirect to its login
+// page, which is how a Gate behind SSO reports a missing or expired session.
+var ErrLoginRequired = errors.New("gate requires a login session: set GATE_COOKIE or GATE_COOKIE_FILE to a valid SESSION cookie, or run 'spinnaker-mcp login'")
+
+// NormalizeCookie accepts either a full Cookie header value ("SESSION=abc") or a bare
+// SESSION value ("abc") and returns the header value to send.
+func NormalizeCookie(raw string) string {
+	v := strings.TrimSpace(raw)
+	if v == "" {
+		return ""
+	}
+	if !strings.Contains(v, "=") {
+		return "SESSION=" + v
+	}
+	return v
+}
+
+func isLoginRedirect(location string) bool {
+	u, err := url.Parse(location)
+	if err != nil {
+		return false
+	}
+	return strings.HasSuffix(strings.TrimRight(u.Path, "/"), "/login")
+}
+
 type GateOptions struct {
 	BaseURL  string
 	Token    string
@@ -51,6 +86,8 @@ type GateOptions struct {
 	CertFile string
 	KeyFile  string
 	Insecure bool
+	// Cookie is a Cookie header value (or bare SESSION value) for a Gate behind SSO.
+	Cookie string
 }
 
 func NewGate(opts GateOptions) (*GateClient, error) {
@@ -92,6 +129,8 @@ func NewGate(opts GateOptions) (*GateClient, error) {
 		auth = &bearerAuth{token: opts.Token}
 	case opts.User != "":
 		auth = &basicAuth{user: opts.User, pass: opts.Pass}
+	case strings.TrimSpace(opts.Cookie) != "":
+		auth = &cookieAuth{cookie: NormalizeCookie(opts.Cookie)}
 	default:
 		auth = &noAuth{}
 	}
@@ -134,7 +173,11 @@ func (c *GateClient) do(req *http.Request) ([]byte, error) {
 		return nil, fmt.Errorf("response body exceeds %d bytes", maxResponseSize)
 	}
 	if resp.StatusCode >= 300 && resp.StatusCode < 400 {
-		return nil, fmt.Errorf("gate returned unexpected redirect %d to %q", resp.StatusCode, resp.Header.Get("Location"))
+		loc := resp.Header.Get("Location")
+		if isLoginRedirect(loc) {
+			return nil, fmt.Errorf("%w (gate redirected to %q)", ErrLoginRequired, loc)
+		}
+		return nil, fmt.Errorf("gate returned unexpected redirect %d to %q", resp.StatusCode, loc)
 	}
 	if resp.StatusCode >= 400 {
 		const maxErrBody = 500
@@ -418,6 +461,15 @@ func (c *GateClient) GetAccount(ctx context.Context, account string) ([]byte, er
 
 func (c *GateClient) GetTask(ctx context.Context, taskID string) ([]byte, error) {
 	return c.get(ctx, fmt.Sprintf("/tasks/%s", url.PathEscape(taskID)), nil)
+}
+
+// --- Auth ---
+
+// CurrentUser returns Gate's view of the caller (GET /auth/user). Behind SSO it is the
+// cheapest check that a session cookie is still valid; Gate answers an expired or
+// missing session with a redirect to /login, which surfaces as ErrLoginRequired.
+func (c *GateClient) CurrentUser(ctx context.Context) ([]byte, error) {
+	return c.get(ctx, "/auth/user", nil)
 }
 
 // --- Health ---
