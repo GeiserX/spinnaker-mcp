@@ -2,8 +2,8 @@ apiVersion: v2
 name: spinnaker-mcp
 description: MCP server exposing Spinnaker CD platform via Gate API
 type: application
-version: 0.1.1
-appVersion: "0.3.4"
+version: 0.1.2
+appVersion: "0.3.5"
 home: https://github.com/GeiserX/spinnaker-mcp
 sources:
   - https://github.com/GeiserX/spinnaker-mcp
