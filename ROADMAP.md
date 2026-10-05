@@ -2,7 +2,7 @@
 
 This document outlines the planned features and improvements for Spinnaker-MCP. The Spinnaker Gate API is extensive (~150+ endpoints across 60+ controllers), and this MCP server currently covers the highest-value operations. The roadmap is organized by priority and grouped by API domain.
 
-## Current State (v0.3.3)
+## Current State (v0.3.5)
 
 **37 tools** covering the core deployment workflow, pipeline lifecycle, and infrastructure visibility:
 
