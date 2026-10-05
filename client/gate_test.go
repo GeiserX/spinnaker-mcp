@@ -1170,7 +1170,7 @@ func TestDo_LoginRedirectIsErrLoginRequired(t *testing.T) {
 }
 
 func TestDo_OtherRedirectKeepsGenericError(t *testing.T) {
-	for _, loc := range []string{"/somewhere-else", "::not-a-url"} {
+	for _, loc := range []string{"/somewhere-else", "https://gate.example.com/logout"} {
 		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Location", loc)
 			w.WriteHeader(http.StatusFound)
@@ -1203,6 +1203,23 @@ func TestNormalizeCookie(t *testing.T) {
 	for in, want := range cases {
 		if got := NormalizeCookie(in); got != want {
 			t.Errorf("NormalizeCookie(%q) = %q, want %q", in, got, want)
+		}
+	}
+}
+
+func TestIsLoginRedirect(t *testing.T) {
+	cases := map[string]bool{
+		"/login":                          true,
+		"https://gate.example.com/login":  true,
+		"https://gate.example.com/login/": true,
+		"/login?from=api":                 true,
+		"/somewhere-else":                 false,
+		"https://gate.example.com/logout": false,
+		"::not-a-url":                     false,
+	}
+	for loc, want := range cases {
+		if got := isLoginRedirect(loc); got != want {
+			t.Errorf("isLoginRedirect(%q) = %v, want %v", loc, got, want)
 		}
 	}
 }
