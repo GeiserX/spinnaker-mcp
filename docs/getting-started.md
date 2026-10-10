@@ -20,10 +20,10 @@ This downloads the pre-built Go binary for your platform and runs it with stdio 
 ## Docker
 
 ```sh
-docker run -i --rm -e GATE_URL=http://spin-gate:8084 -e TRANSPORT=stdio drumsergio/spinnaker-mcp:v0.3.5
+docker run -i --rm -e GATE_URL=http://spin-gate:8084 -e TRANSPORT=stdio drumsergio/spinnaker-mcp:v0.3.6
 ```
 
-Image tags carry the `v` prefix (`v0.3.5`). `-i` keeps stdin open, which the stdio transport needs.
+Image tags carry the `v` prefix (`v0.3.6`). `-i` keeps stdin open, which the stdio transport needs.
 
 ## Local build
 
@@ -53,7 +53,7 @@ it, `gate.auth.type` (`token` or `basic`) with `gate.auth.token` or `gate.auth.u
 makes the chart create one. For an x509 client certificate, `gate.tls.certSecret` names a Secret with
 `tls.crt` and `tls.key`. The pod runs the [HTTP transport](configuration.md#http-transport) on port 8085
 behind a `ClusterIP` Service, with liveness on `/healthz` and readiness on `/readyz`, and the image tag
-defaults to `v` plus the chart's `appVersion` (`v0.3.5`). It listens on `0.0.0.0` inside the pod and `/mcp`
+defaults to `v` plus the chart's `appVersion` (`v0.3.6`). It listens on `0.0.0.0` inside the pod and `/mcp`
 has no login, so anything that reaches the Service acts with the Gate identity: drop `toolsets=readonly`
 only if the clients must change things, and limit who reaches the Service.
 
