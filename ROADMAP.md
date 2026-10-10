@@ -148,7 +148,7 @@ Enable or disable tool groups via the `--toolsets` flag or `TOOLSETS` environmen
 | Meta | Resolves to | Use case |
 |------|-------------|----------|
 | `all` | All 6 groups (default) | Full access |
-| `readonly` | All tools annotated `readOnly` (24 tools) | Safe observation mode — no mutations possible |
+| `readonly` | All tools annotated `readOnly` (27 tools) | Safe observation mode — no mutations possible |
 | `mutating` | Tools annotated `mutating` or `destructive` (10 tools) | Action-only (pair with `applications` for context) |
 
 **Usage examples:**
@@ -157,7 +157,7 @@ Enable or disable tool groups via the `--toolsets` flag or `TOOLSETS` environmen
 # Only pipeline and execution tools (15 tools)
 spinnaker-mcp --toolsets=pipelines,executions
 
-# Read-only mode — safe for monitoring agents (24 tools)
+# Read-only mode — safe for monitoring agents (27 tools)
 TOOLSETS=readonly spinnaker-mcp
 
 # Infrastructure visibility only (16 tools)
