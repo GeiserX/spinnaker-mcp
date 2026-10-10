@@ -144,9 +144,9 @@ func TestToolsetsLabel(t *testing.T) {
 // An MCP client that leaves GATE_TOKEN blank may still pass the literal "${GATE_TOKEN}".
 // It must not reach Gate as a bearer token.
 func TestPlaceholderToken_SendsNoAuthorization(t *testing.T) {
-	var auth string
+	authc := make(chan string, 1)
 	gateSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		auth = r.Header.Get("Authorization")
+		authc <- r.Header.Get("Authorization")
 		w.WriteHeader(200)
 	}))
 	defer gateSrv.Close()
@@ -165,7 +165,7 @@ func TestPlaceholderToken_SendsNoAuthorization(t *testing.T) {
 	if err := gate.Ping(context.Background()); err != nil {
 		t.Fatalf("Ping: %v", err)
 	}
-	if auth != "" {
+	if auth := <-authc; auth != "" {
 		t.Errorf("Authorization = %q, want none", auth)
 	}
 }
