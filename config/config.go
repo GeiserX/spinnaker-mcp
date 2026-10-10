@@ -4,6 +4,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/joho/godotenv"
@@ -43,10 +44,10 @@ func LoadGateConfig() GateConfig {
 // loadCookie resolves the session cookie. GATE_COOKIE wins; then the file named by
 // GATE_COOKIE_FILE; then the default cookie file for the Gate host, if it exists.
 func loadCookie(gateURL string) string {
-	if v := strings.TrimSpace(os.Getenv("GATE_COOKIE")); v != "" {
+	if v := strings.TrimSpace(Getenv("GATE_COOKIE")); v != "" {
 		return v
 	}
-	path := os.Getenv("GATE_COOKIE_FILE")
+	path := Getenv("GATE_COOKIE_FILE")
 	if path == "" {
 		path = DefaultCookieFile(gateURL)
 	}
@@ -68,7 +69,7 @@ func DefaultCookieFile(gateURL string) string {
 	if err != nil || u.Host == "" {
 		return ""
 	}
-	dir := os.Getenv("XDG_CONFIG_HOME")
+	dir := Getenv("XDG_CONFIG_HOME")
 	if dir == "" {
 		home, err := os.UserHomeDir()
 		if err != nil {
@@ -79,8 +80,23 @@ func DefaultCookieFile(gateURL string) string {
 	return filepath.Join(dir, "spinnaker-mcp", "cookies", strings.ReplaceAll(u.Host, ":", "_"))
 }
 
+// placeholder matches a value that is nothing but an unexpanded variable reference, like "${GATE_TOKEN}".
+var placeholder = regexp.MustCompile(`^\$\{[A-Za-z_][A-Za-z0-9_]*\}$`)
+
+// Getenv is os.Getenv, except that a value which is only an unexpanded placeholder such as
+// "${GATE_TOKEN}" reads as unset. Some MCP clients write that placeholder into the server's
+// environment when an optional field is left blank; taken literally it would be sent to Gate
+// as a bearer token, or make the server exit on an unknown toolset.
+func Getenv(k string) string {
+	v := os.Getenv(k)
+	if placeholder.MatchString(strings.TrimSpace(v)) {
+		return ""
+	}
+	return v
+}
+
 func getEnv(k, d string) string {
-	if v := os.Getenv(k); v != "" {
+	if v := Getenv(k); v != "" {
 		return v
 	}
 	return d

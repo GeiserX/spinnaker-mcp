@@ -47,6 +47,8 @@ Add the server to your MCP client (Claude Code, Claude Desktop, Cursor):
 
 Needs Node 18 or newer; the npm package runs the Go binary over stdio. Docker, local builds and the other credentials are in [Getting started](https://geiserx.github.io/spinnaker-mcp/getting-started/).
 
+A variable whose value is only an unexpanded placeholder, such as `${GATE_TOKEN}`, counts as unset.
+
 ## Documentation
 
 The full documentation is at [geiserx.github.io/spinnaker-mcp](https://geiserx.github.io/spinnaker-mcp/).

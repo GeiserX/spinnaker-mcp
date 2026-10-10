@@ -48,16 +48,7 @@ func main() {
 	log.Printf("Spinnaker MCP %s starting…", version.String())
 
 	cfg := config.LoadGateConfig()
-	gate, err := client.NewGate(client.GateOptions{
-		BaseURL:  cfg.BaseURL,
-		Token:    cfg.Token,
-		User:     cfg.User,
-		Pass:     cfg.Pass,
-		CertFile: cfg.CertFile,
-		KeyFile:  cfg.KeyFile,
-		Insecure: cfg.Insecure,
-		Cookie:   cfg.Cookie,
-	})
+	gate, err := newGate(cfg)
 	if err != nil {
 		log.Fatalf("Failed to create Gate client: %v", err)
 	}
@@ -66,9 +57,7 @@ func main() {
 	}
 
 	// Resolve toolsets
-	if toolsetsFlag == "" {
-		toolsetsFlag = os.Getenv("TOOLSETS")
-	}
+	toolsetsFlag = toolsetsSpec(toolsetsFlag)
 
 	allTools := toolsets.BuildTools(gate)
 	selectedTools, err := toolsets.Resolve(toolsetsFlag, allTools)
@@ -95,7 +84,7 @@ func main() {
 	resources.Register(s, gate)
 	prompts.Register(s)
 
-	transport := strings.ToLower(os.Getenv("TRANSPORT"))
+	transport := strings.ToLower(config.Getenv("TRANSPORT"))
 	if transport == "stdio" {
 		stdioSrv := server.NewStdioServer(s)
 		log.Println("Spinnaker MCP running on stdio")
@@ -103,7 +92,7 @@ func main() {
 			log.Fatalf("stdio server error: %v", err)
 		}
 	} else {
-		portStr := os.Getenv("MCP_PORT")
+		portStr := config.Getenv("MCP_PORT")
 		if portStr == "" {
 			portStr = "8085"
 		}
@@ -111,7 +100,7 @@ func main() {
 		if err != nil || p < 1 || p > 65535 {
 			log.Fatalf("Invalid MCP_PORT %q: must be 1-65535", portStr)
 		}
-		bindAddr := os.Getenv("MCP_BIND_ADDR")
+		bindAddr := config.Getenv("MCP_BIND_ADDR")
 		if bindAddr == "" {
 			bindAddr = "127.0.0.1"
 		}
@@ -137,6 +126,27 @@ func main() {
 			log.Fatalf("server error: %v", err)
 		}
 	}
+}
+
+func newGate(cfg config.GateConfig) (*client.GateClient, error) {
+	return client.NewGate(client.GateOptions{
+		BaseURL:  cfg.BaseURL,
+		Token:    cfg.Token,
+		User:     cfg.User,
+		Pass:     cfg.Pass,
+		CertFile: cfg.CertFile,
+		KeyFile:  cfg.KeyFile,
+		Insecure: cfg.Insecure,
+		Cookie:   cfg.Cookie,
+	})
+}
+
+// toolsetsSpec returns the --toolsets flag if given, else TOOLSETS from the environment.
+func toolsetsSpec(flag string) string {
+	if flag != "" {
+		return flag
+	}
+	return config.Getenv("TOOLSETS")
 }
 
 func toolsetsLabel(raw string) string {

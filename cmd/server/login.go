@@ -32,7 +32,7 @@ func runLogin(args []string, stdin io.Reader, stderr io.Writer) int {
 	cookieFile := fs.String("cookie-file", "", "where to store the cookie (default: $XDG_CONFIG_HOME/spinnaker-mcp/cookies/<host>)")
 	cookie := fs.String("cookie", "", "SESSION cookie value (default: read one line from stdin)")
 	noBrowser := fs.Bool("no-browser", false, "do not open the Gate login page in a browser")
-	insecure := fs.Bool("insecure", os.Getenv("GATE_INSECURE") == "true", "skip TLS certificate verification")
+	insecure := fs.Bool("insecure", config.Getenv("GATE_INSECURE") == "true", "skip TLS certificate verification")
 	if err := fs.Parse(args); err != nil {
 		return 2
 	}
@@ -148,7 +148,7 @@ func openBrowser(u string) {
 }
 
 func envOr(k, d string) string {
-	if v := os.Getenv(k); v != "" {
+	if v := config.Getenv(k); v != "" {
 		return v
 	}
 	return d

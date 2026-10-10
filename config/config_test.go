@@ -123,3 +123,37 @@ func TestLoadGateConfig_NoCookieWithoutHostOrHome(t *testing.T) {
 		t.Errorf("without HOME and XDG_CONFIG_HOME there is no default file, got %q", got)
 	}
 }
+
+func TestGetenv_UnexpandedPlaceholderReadsAsUnset(t *testing.T) {
+	cases := map[string]string{
+		"${GATE_TOKEN}":    "",
+		"${TOOLSETS}":      "",
+		" ${OTHER_NAME} ":  "",
+		"real-token":       "real-token",
+		"tok${GATE_TOKEN}": "tok${GATE_TOKEN}",
+		"${not a name}":    "${not a name}",
+		"$GATE_TOKEN":      "$GATE_TOKEN",
+		"":                 "",
+	}
+	for in, want := range cases {
+		t.Setenv("SPINNAKER_MCP_TEST_VAR", in)
+		if got := Getenv("SPINNAKER_MCP_TEST_VAR"); got != want {
+			t.Errorf("Getenv with %q = %q, want %q", in, got, want)
+		}
+	}
+}
+
+func TestLoadGateConfig_PlaceholderValuesAreUnset(t *testing.T) {
+	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
+	for _, k := range []string{"GATE_URL", "GATE_TOKEN", "GATE_USER", "GATE_PASS", "GATE_CERT_FILE", "GATE_KEY_FILE", "GATE_INSECURE", "GATE_COOKIE", "GATE_COOKIE_FILE"} {
+		t.Setenv(k, "${"+k+"}")
+	}
+
+	cfg := LoadGateConfig()
+	if cfg.BaseURL != "http://localhost:8084" {
+		t.Errorf("BaseURL = %q, want the default", cfg.BaseURL)
+	}
+	if cfg.Token != "" || cfg.User != "" || cfg.Pass != "" || cfg.CertFile != "" || cfg.KeyFile != "" || cfg.Cookie != "" {
+		t.Errorf("placeholder leaked into config: %+v", cfg)
+	}
+}
