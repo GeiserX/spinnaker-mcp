@@ -22,6 +22,10 @@
 Put them in a `.env` file (from `.env.example`) or set them in the environment. The npm package always runs
 with `TRANSPORT=stdio`, and the Docker image sets `TRANSPORT=stdio` unless you override it.
 
+A value that is nothing but an unexpanded placeholder, such as `${GATE_TOKEN}`, counts as unset. Some MCP
+clients write that placeholder when an optional field is left blank; the server ignores it rather than send it
+to Gate as a token or reject it as a toolset.
+
 ## Gate behind SSO
 
 A Gate that sits behind a single sign-on login (OAuth2, SAML) accepts no token and no password from an API

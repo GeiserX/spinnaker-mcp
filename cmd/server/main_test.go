@@ -9,6 +9,8 @@ import (
 	"testing"
 
 	"github.com/geiserx/spinnaker-mcp/client"
+	"github.com/geiserx/spinnaker-mcp/config"
+	"github.com/geiserx/spinnaker-mcp/internal/toolsets"
 )
 
 func TestHealthzHandler(t *testing.T) {
@@ -136,5 +138,66 @@ func TestToolsetsLabel(t *testing.T) {
 	}
 	if got := toolsetsLabel("pipelines,executions"); got != "pipelines,executions" {
 		t.Errorf("toolsetsLabel(\"pipelines,executions\") = %q, want %q", got, "pipelines,executions")
+	}
+}
+
+// An MCP client that leaves GATE_TOKEN blank may still pass the literal "${GATE_TOKEN}".
+// It must not reach Gate as a bearer token.
+func TestPlaceholderToken_SendsNoAuthorization(t *testing.T) {
+	var auth string
+	gateSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		auth = r.Header.Get("Authorization")
+		w.WriteHeader(200)
+	}))
+	defer gateSrv.Close()
+
+	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
+	t.Setenv("GATE_URL", gateSrv.URL)
+	t.Setenv("GATE_TOKEN", "${GATE_TOKEN}")
+	t.Setenv("GATE_USER", "")
+	t.Setenv("GATE_COOKIE", "")
+	t.Setenv("GATE_COOKIE_FILE", "")
+
+	gate, err := newGate(config.LoadGateConfig())
+	if err != nil {
+		t.Fatalf("newGate: %v", err)
+	}
+	if err := gate.Ping(context.Background()); err != nil {
+		t.Fatalf("Ping: %v", err)
+	}
+	if auth != "" {
+		t.Errorf("Authorization = %q, want none", auth)
+	}
+}
+
+// The same for TOOLSETS: "${TOOLSETS}" means the default, all tools, not an unknown group.
+func TestPlaceholderToolsets_RegistersAllTools(t *testing.T) {
+	gate, err := client.NewGate(client.GateOptions{BaseURL: "http://localhost:8084"})
+	if err != nil {
+		t.Fatalf("NewGate: %v", err)
+	}
+	all := toolsets.BuildTools(gate)
+	want, _ := toolsets.Resolve("", all)
+
+	// The literal value is what made the server exit; prove it still would.
+	if _, err := toolsets.Resolve("${TOOLSETS}", all); err == nil {
+		t.Fatal("Resolve accepted the literal placeholder; this test no longer covers the exit")
+	}
+
+	t.Setenv("TOOLSETS", "${TOOLSETS}")
+	got, err := toolsets.Resolve(toolsetsSpec(""), all)
+	if err != nil {
+		t.Fatalf("Resolve: %v", err)
+	}
+	if len(got) != len(want) {
+		t.Errorf("registered %d tools, want all %d", len(got), len(want))
+	}
+
+	t.Setenv("TOOLSETS", "readonly")
+	if got := toolsetsSpec(""); got != "readonly" {
+		t.Errorf("toolsetsSpec = %q, want readonly", got)
+	}
+	if got := toolsetsSpec("pipelines"); got != "pipelines" {
+		t.Errorf("toolsetsSpec with flag = %q, want pipelines", got)
 	}
 }
