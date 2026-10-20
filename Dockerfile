@@ -16,6 +16,9 @@ RUN CGO_ENABLED=0 go build -ldflags "-s -w" -o /out/spinnaker-mcp ./cmd/server
 # Stage 2 – tiny runtime image
 # ───────────────────────────────────────────────
 FROM alpine:3.24
+# The base image can lag the CA bundle; take the current one, which drops
+# the compromised eMudhra (emSign) intermediates.
+RUN apk upgrade --no-cache ca-certificates-bundle
 LABEL io.modelcontextprotocol.server.name="io.github.GeiserX/spinnaker-mcp"
 
 RUN addgroup -S mcp && adduser -S mcp -G mcp
