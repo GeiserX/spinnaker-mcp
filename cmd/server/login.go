@@ -19,6 +19,7 @@ import (
 
 	"github.com/geiserx/spinnaker-mcp/client"
 	"github.com/geiserx/spinnaker-mcp/config"
+	"golang.org/x/term"
 )
 
 // runLogin implements `spinnaker-mcp login`, for a Gate that sits behind SSO (OAuth2, SAML).
@@ -30,7 +31,7 @@ func runLogin(args []string, stdin io.Reader, stderr io.Writer) int {
 	fs.SetOutput(stderr)
 	gateURL := fs.String("gate", envOr("GATE_URL", "http://localhost:8084"), "Gate URL (default: GATE_URL)")
 	cookieFile := fs.String("cookie-file", "", "where to store the cookie (default: $XDG_CONFIG_HOME/spinnaker-mcp/cookies/<host>)")
-	cookie := fs.String("cookie", "", "SESSION cookie value (default: read one line from stdin)")
+	cookie := fs.String("cookie", "", "SESSION cookie value; avoid it, the value stays in shell history (default: read from stdin, without echo on a terminal)")
 	noBrowser := fs.Bool("no-browser", false, "do not open the Gate login page in a browser")
 	insecure := fs.Bool("insecure", config.Getenv("GATE_INSECURE") == "true", "skip TLS certificate verification")
 	if err := fs.Parse(args); err != nil {
@@ -45,13 +46,16 @@ func runLogin(args []string, stdin io.Reader, stderr io.Writer) int {
 	}
 
 	value := strings.TrimSpace(*cookie)
+	if value != "" {
+		fmt.Fprintln(stderr, "login: warning: --cookie leaves the session cookie in shell history and the process list; paste it at the prompt or pipe it on stdin instead")
+	}
 	if value == "" {
 		loginURL := base + "/login"
 		if !*noBrowser {
 			openBrowser(loginURL)
 		}
-		fmt.Fprintf(stderr, "Sign in to Spinnaker in your browser:\n  %s\n\nThen copy the SESSION cookie for %s (DevTools, Application tab, Cookies) and paste it here.\nSESSION cookie: ", loginURL, u.Host)
-		line, err := bufio.NewReader(stdin).ReadString('\n')
+		fmt.Fprintf(stderr, "Sign in to Spinnaker in your browser:\n  %s\n\nThen copy the SESSION cookie for %s (DevTools, Application tab, Cookies) and paste it here (it is not shown).\nSESSION cookie: ", loginURL, u.Host)
+		line, err := readSecretLine(stdin)
 		if err != nil && line == "" {
 			fmt.Fprintln(stderr, "\nlogin: no cookie given")
 			return 1
@@ -91,6 +95,16 @@ func runLogin(args []string, stdin io.Reader, stderr io.Writer) int {
 	}
 	fmt.Fprintf(stderr, "Signed in to %s as %s. Session cookie stored in %s\nspinnaker-mcp reads it automatically when GATE_URL is %s; run login again when the session expires.\n", u.Host, user, path, base)
 	return 0
+}
+
+// readSecretLine reads one line. On a terminal it turns echo off, so the session cookie
+// never lands on screen or in scrollback; piped input is read as is.
+func readSecretLine(stdin io.Reader) (string, error) {
+	if f, ok := stdin.(*os.File); ok && term.IsTerminal(int(f.Fd())) {
+		b, err := term.ReadPassword(int(f.Fd()))
+		return string(b), err
+	}
+	return bufio.NewReader(stdin).ReadString('\n')
 }
 
 // verifySession asks Gate who the cookie belongs to. A Gate behind SSO answers an anonymous

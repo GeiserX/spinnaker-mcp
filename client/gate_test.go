@@ -155,12 +155,15 @@ func TestGateClient_CancelExecution(t *testing.T) {
 		if r.URL.Query().Get("reason") != "testing" {
 			t.Errorf("expected reason=testing, got %s", r.URL.Query().Get("reason"))
 		}
+		if r.URL.Query().Get("force") != "true" {
+			t.Errorf("expected force=true, got %q", r.URL.Query().Get("force"))
+		}
 		w.WriteHeader(200)
 	}))
 	defer srv.Close()
 
 	gate := newTestGate(t, srv.URL)
-	_, err := gate.CancelExecution(context.Background(), "exec-123", "testing")
+	_, err := gate.CancelExecution(context.Background(), "exec-123", "testing", true)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -353,7 +356,7 @@ func TestGateClient_CancelExecutionNoReason(t *testing.T) {
 	defer srv.Close()
 
 	gate := newTestGate(t, srv.URL)
-	_, err := gate.CancelExecution(context.Background(), "exec-123", "")
+	_, err := gate.CancelExecution(context.Background(), "exec-123", "", false)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -414,8 +417,9 @@ func TestGateClient_RedirectReturnsError(t *testing.T) {
 	}
 }
 
-func TestGateClient_ErrorBodyTruncated(t *testing.T) {
-	bigBody := strings.Repeat("x", 1000)
+func TestGateClient_ErrorBodyNotEchoed(t *testing.T) {
+	// A proxy error page or a stack trace is not something to hand to the model.
+	bigBody := "<html>internal-gate.corp:8084 " + strings.Repeat("x", 1000)
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(500)
 		w.Write([]byte(bigBody))
@@ -427,11 +431,77 @@ func TestGateClient_ErrorBodyTruncated(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error for 500 response")
 	}
-	if !strings.Contains(err.Error(), "(truncated)") {
-		t.Errorf("expected truncated error, got: %v", err)
+	if strings.Contains(err.Error(), "internal-gate") || strings.Contains(err.Error(), "xxx") {
+		t.Errorf("raw error body echoed: %v", err)
 	}
-	if len(err.Error()) > 600 {
-		t.Errorf("error too long (%d chars), truncation may have failed", len(err.Error()))
+	if err.Error() != "gate error 500 (Internal Server Error)" {
+		t.Errorf("err = %q", err)
+	}
+}
+
+func TestGateClient_ErrorMessageKept(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(404)
+		w.Write([]byte(`{"error":"Not Found","message":"Application not found\nretry","status":404,"trace":"at com.netflix..."}`))
+	}))
+	defer srv.Close()
+	_, err := newTestGate(t, srv.URL).ListApplications(context.Background())
+	if err == nil || err.Error() != "gate error 404: Application not found retry" {
+		t.Fatalf("err = %v", err)
+	}
+
+	long := strings.Repeat("y", 2000)
+	srv2 := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(400)
+		w.Write([]byte(`{"message":"` + long + `"}`))
+	}))
+	defer srv2.Close()
+	_, err = newTestGate(t, srv2.URL).ListApplications(context.Background())
+	if err == nil || !strings.Contains(err.Error(), "(truncated)") || len(err.Error()) > 400 {
+		t.Fatalf("long message not truncated: %d chars", len(err.Error()))
+	}
+}
+
+func TestGateClient_UnreachableHidesURL(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	u := srv.URL
+	srv.Close()
+	_, err := newTestGate(t, u).ListApplications(context.Background())
+	if err == nil {
+		t.Fatal("expected an error")
+	}
+	if strings.Contains(err.Error(), strings.TrimPrefix(u, "http://")) {
+		t.Errorf("error leaks the Gate address: %v", err)
+	}
+}
+
+// Names with spaces, slashes and percent signs must reach Gate escaped exactly once.
+func TestGateClient_PathSegmentsEscapedOnce(t *testing.T) {
+	var got string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		got = r.URL.EscapedPath()
+		w.Write([]byte(`{}`))
+	}))
+	defer srv.Close()
+
+	for _, base := range []string{srv.URL, srv.URL + "/gate"} {
+		gate := newTestGate(t, base)
+		if _, err := gate.GetPipelineConfig(context.Background(), "my app", "Deploy to Prod/50%"); err != nil {
+			t.Fatal(err)
+		}
+		want := strings.TrimPrefix(base, srv.URL) + "/applications/my%20app/pipelineConfigs/Deploy%20to%20Prod%2F50%25"
+		if got != want {
+			t.Errorf("base %s: path = %q, want %q", base, got, want)
+		}
+	}
+}
+
+func TestNewGate_HalfX509ConfigRejected(t *testing.T) {
+	if _, err := NewGate(GateOptions{BaseURL: "https://gate", CertFile: "/c.pem"}); err == nil {
+		t.Error("cert without key accepted")
+	}
+	if _, err := NewGate(GateOptions{BaseURL: "https://gate", KeyFile: "/k.pem"}); err == nil {
+		t.Error("key without cert accepted")
 	}
 }
 
@@ -877,7 +947,7 @@ func TestGateClient_GetTargetServerGroup(t *testing.T) {
 
 func TestGateClient_ListFirewalls(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/securityGroups" {
+		if r.URL.Path != "/firewalls" {
 			t.Errorf("unexpected path: %s", r.URL.Path)
 		}
 		w.Write([]byte(`[{"name":"sg-default"}]`))
@@ -896,15 +966,18 @@ func TestGateClient_ListFirewalls(t *testing.T) {
 
 func TestGateClient_GetFirewall(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/securityGroups/prod/us-east-1/sg-default" {
+		if r.URL.Path != "/firewalls/prod/us-east-1/sg-default" {
 			t.Errorf("unexpected path: %s", r.URL.Path)
+		}
+		if q := r.URL.RawQuery; q != "provider=gce&vpcId=vpc-1" {
+			t.Errorf("query = %q, want provider=gce&vpcId=vpc-1", q)
 		}
 		w.Write([]byte(`{"name":"sg-default"}`))
 	}))
 	defer srv.Close()
 
 	gate := newTestGate(t, srv.URL)
-	resp, err := gate.GetFirewall(context.Background(), "prod", "us-east-1", "sg-default")
+	resp, err := gate.GetFirewall(context.Background(), "prod", "us-east-1", "sg-default", "gce", "vpc-1")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -1025,12 +1098,15 @@ func TestGateClient_GetImageTags(t *testing.T) {
 		if r.URL.Query().Get("repository") != "myapp" {
 			t.Errorf("expected repository=myapp, got %s", r.URL.Query().Get("repository"))
 		}
+		if r.URL.Query().Get("provider") != "dockerRegistry" {
+			t.Errorf("expected provider=dockerRegistry, got %q", r.URL.Query().Get("provider"))
+		}
 		w.Write([]byte(`["v1.0","v1.1"]`))
 	}))
 	defer srv.Close()
 
 	gate := newTestGate(t, srv.URL)
-	resp, err := gate.GetImageTags(context.Background(), "my-registry", "myapp")
+	resp, err := gate.GetImageTags(context.Background(), "my-registry", "myapp", "dockerRegistry")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -1178,7 +1254,7 @@ func TestDo_OtherRedirectKeepsGenericError(t *testing.T) {
 		gate := newTestGate(t, srv.URL)
 		_, err := gate.ListApplications(context.Background())
 		srv.Close()
-		if err == nil || errors.Is(err, ErrLoginRequired) || !strings.Contains(err.Error(), "unexpected redirect 302") {
+		if err == nil || errors.Is(err, ErrLoginRequired) || !strings.Contains(err.Error(), "unexpected redirect 302") || strings.Contains(err.Error(), loc) {
 			t.Fatalf("location %q: expected the generic redirect error, got %v", loc, err)
 		}
 	}
@@ -1221,5 +1297,22 @@ func TestIsLoginRedirect(t *testing.T) {
 		if got := isLoginRedirect(loc); got != want {
 			t.Errorf("isLoginRedirect(%q) = %v, want %v", loc, got, want)
 		}
+	}
+}
+
+func TestGateClient_JudgeStage(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "PATCH" || r.URL.Path != "/pipelines/exec-1/stages/st-9" {
+			t.Errorf("got %s %s, want PATCH /pipelines/exec-1/stages/st-9", r.Method, r.URL.Path)
+		}
+		b, _ := io.ReadAll(r.Body)
+		if string(b) != `{"judgmentInput":"prod","judgmentStatus":"continue"}` {
+			t.Errorf("body = %s", b)
+		}
+		w.Write([]byte(`{}`))
+	}))
+	defer srv.Close()
+	if _, err := newTestGate(t, srv.URL).JudgeStage(context.Background(), "exec-1", "st-9", "continue", "prod"); err != nil {
+		t.Fatal(err)
 	}
 }

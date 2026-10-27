@@ -1,6 +1,7 @@
 package config
 
 import (
+	"log"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -10,8 +11,17 @@ import (
 	"github.com/joho/godotenv"
 )
 
+// init loads a dotenv file only when SPINNAKER_MCP_ENV_FILE names one. MCP clients start
+// stdio servers inside whatever project is open, and an implicit ./.env there could point
+// GATE_URL at another host or turn TLS verification off. Variables already set win.
 func init() {
-	_ = godotenv.Load()
+	if f := os.Getenv("SPINNAKER_MCP_ENV_FILE"); f != "" {
+		if err := godotenv.Load(f); err != nil {
+			log.Printf("SPINNAKER_MCP_ENV_FILE: %v", err)
+		} else {
+			log.Printf("Loaded environment from %s", f)
+		}
+	}
 }
 
 type GateConfig struct {

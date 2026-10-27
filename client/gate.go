@@ -102,6 +102,9 @@ func NewGate(opts GateOptions) (*GateClient, error) {
 
 	transport := http.DefaultTransport.(*http.Transport).Clone()
 
+	if (opts.CertFile == "") != (opts.KeyFile == "") {
+		return nil, errors.New("x509 client auth needs both GATE_CERT_FILE and GATE_KEY_FILE; only one is set")
+	}
 	if opts.CertFile != "" && opts.KeyFile != "" {
 		cert, err := tls.LoadX509KeyPair(opts.CertFile, opts.KeyFile)
 		if err != nil {
@@ -148,9 +151,18 @@ func NewGate(opts GateOptions) (*GateClient, error) {
 	}, nil
 }
 
+// buildURL joins the base URL with path, whose segments the callers have already escaped
+// with url.PathEscape. The escaped form goes into RawPath so it is sent as is: appending
+// it to Path would make URL.String escape every % a second time, and a pipeline named
+// "Deploy to Prod" would reach Gate as "Deploy%2520to%2520Prod".
 func (c *GateClient) buildURL(path string, q url.Values) string {
 	u := *c.base
-	u.Path += path
+	raw := c.base.EscapedPath() + path
+	if p, err := url.PathUnescape(raw); err == nil {
+		u.Path, u.RawPath = p, raw
+	} else {
+		u.Path += path
+	}
 	if q != nil {
 		u.RawQuery = q.Encode()
 	}
@@ -162,7 +174,7 @@ func (c *GateClient) do(req *http.Request) ([]byte, error) {
 	req.Header.Set("Accept", "application/json")
 	resp, err := c.hc.Do(req)
 	if err != nil {
-		return nil, err
+		return nil, transportError(req, err)
 	}
 	defer resp.Body.Close()
 	body, err := io.ReadAll(io.LimitReader(resp.Body, maxResponseSize+1))
@@ -175,19 +187,70 @@ func (c *GateClient) do(req *http.Request) ([]byte, error) {
 	if resp.StatusCode >= 300 && resp.StatusCode < 400 {
 		loc := resp.Header.Get("Location")
 		if isLoginRedirect(loc) {
-			return nil, fmt.Errorf("%w (gate redirected to %q)", ErrLoginRequired, loc)
+			return nil, fmt.Errorf("%w (gate redirected to its login page)", ErrLoginRequired)
 		}
-		return nil, fmt.Errorf("gate returned unexpected redirect %d to %q", resp.StatusCode, loc)
+		return nil, fmt.Errorf("gate returned unexpected redirect %d", resp.StatusCode)
 	}
 	if resp.StatusCode >= 400 {
-		const maxErrBody = 500
-		errMsg := string(body)
-		if len(errMsg) > maxErrBody {
-			errMsg = errMsg[:maxErrBody] + "... (truncated)"
-		}
-		return nil, fmt.Errorf("gate error %d: %s", resp.StatusCode, errMsg)
+		return nil, statusError(resp.StatusCode, body)
 	}
 	return body, nil
+}
+
+// maxErrMessage bounds the Gate error message passed back to the model.
+const maxErrMessage = 300
+
+// statusError turns a Gate error response into a message the model can act on. Only the
+// "message" (or "error") field of a JSON error body is kept: raw bodies can be proxy HTML
+// pages, stack traces or internal URLs, and they are the caller's data, not ours to echo.
+func statusError(code int, body []byte) error {
+	var e struct {
+		Message string `json:"message"`
+		Error   string `json:"error"`
+	}
+	msg := ""
+	if json.Unmarshal(body, &e) == nil {
+		msg = e.Message
+		if msg == "" {
+			msg = e.Error
+		}
+	}
+	msg = cleanMessage(msg)
+	if msg == "" {
+		return fmt.Errorf("gate error %d (%s)", code, http.StatusText(code))
+	}
+	return fmt.Errorf("gate error %d: %s", code, msg)
+}
+
+func cleanMessage(s string) string {
+	s = strings.Map(func(r rune) rune {
+		if r < 0x20 || r == 0x7f {
+			return ' '
+		}
+		return r
+	}, strings.TrimSpace(s))
+	if r := []rune(s); len(r) > maxErrMessage {
+		s = string(r[:maxErrMessage]) + "... (truncated)"
+	}
+	return s
+}
+
+// transportError hides the Gate URL, which net/http puts in every *url.Error, from the
+// model. The full error still goes to the server log for the operator.
+func transportError(req *http.Request, err error) error {
+	var ue *url.Error
+	if !errors.As(err, &ue) {
+		return err
+	}
+	log.Printf("gate request %s %s failed: %v", req.Method, req.URL.Path, ue.Err)
+	switch {
+	case errors.Is(err, context.Canceled):
+		return errors.New("gate request cancelled")
+	case ue.Timeout():
+		return errors.New("gate request timed out")
+	default:
+		return errors.New("gate is unreachable (details in the server log)")
+	}
 }
 
 func (c *GateClient) get(ctx context.Context, path string, q url.Values) ([]byte, error) {
@@ -225,6 +288,10 @@ func (c *GateClient) post(ctx context.Context, path string, payload any) ([]byte
 
 func (c *GateClient) put(ctx context.Context, path string, payload any) ([]byte, error) {
 	return c.doWithBody(ctx, "PUT", path, payload)
+}
+
+func (c *GateClient) patch(ctx context.Context, path string, payload any) ([]byte, error) {
+	return c.doWithBody(ctx, "PATCH", path, payload)
 }
 
 func (c *GateClient) del(ctx context.Context, path string) ([]byte, error) {
@@ -299,10 +366,13 @@ func (c *GateClient) ListExecutions(ctx context.Context, app string, limit int, 
 	return c.get(ctx, fmt.Sprintf("/applications/%s/pipelines", url.PathEscape(app)), q)
 }
 
-func (c *GateClient) CancelExecution(ctx context.Context, executionID, reason string) ([]byte, error) {
+func (c *GateClient) CancelExecution(ctx context.Context, executionID, reason string, force bool) ([]byte, error) {
 	q := url.Values{}
 	if reason != "" {
-		q = url.Values{"reason": {reason}}
+		q.Set("reason", reason)
+	}
+	if force {
+		q.Set("force", "true")
 	}
 	u := c.buildURL(fmt.Sprintf("/pipelines/%s/cancel", url.PathEscape(executionID)), q)
 	req, err := http.NewRequestWithContext(ctx, "PUT", u, nil)
@@ -318,6 +388,17 @@ func (c *GateClient) PauseExecution(ctx context.Context, executionID string) ([]
 
 func (c *GateClient) ResumeExecution(ctx context.Context, executionID string) ([]byte, error) {
 	return c.put(ctx, fmt.Sprintf("/pipelines/%s/resume", url.PathEscape(executionID)), nil)
+}
+
+// JudgeStage records a manual judgment: status "continue" lets the pipeline go on, "stop"
+// fails the stage. input is the chosen judgment option, if the stage offers any.
+func (c *GateClient) JudgeStage(ctx context.Context, executionID, stageID, status, input string) ([]byte, error) {
+	body := map[string]any{"judgmentStatus": status}
+	if input != "" {
+		body["judgmentInput"] = input
+	}
+	return c.patch(ctx, fmt.Sprintf("/pipelines/%s/stages/%s",
+		url.PathEscape(executionID), url.PathEscape(stageID)), body)
 }
 
 func (c *GateClient) RestartStage(ctx context.Context, executionID, stageID string) ([]byte, error) {
@@ -391,15 +472,25 @@ func (c *GateClient) GetTargetServerGroup(ctx context.Context, app, account, clu
 		url.PathEscape(cloudProvider), url.PathEscape(scope), url.PathEscape(target)), nil)
 }
 
-// --- Security Groups / Firewalls ---
+// --- Firewalls (security groups) ---
+// Gate's /securityGroups controller is deprecated in favour of /firewalls.
 
 func (c *GateClient) ListFirewalls(ctx context.Context) ([]byte, error) {
-	return c.get(ctx, "/securityGroups", nil)
+	return c.get(ctx, "/firewalls", nil)
 }
 
-func (c *GateClient) GetFirewall(ctx context.Context, account, region, name string) ([]byte, error) {
-	return c.get(ctx, fmt.Sprintf("/securityGroups/%s/%s/%s",
-		url.PathEscape(account), url.PathEscape(region), url.PathEscape(name)), nil)
+// GetFirewall reads one firewall. Gate assumes provider "aws" when none is given, so
+// non-AWS lookups must pass it.
+func (c *GateClient) GetFirewall(ctx context.Context, account, region, name, provider, vpcID string) ([]byte, error) {
+	q := url.Values{}
+	if provider != "" {
+		q.Set("provider", provider)
+	}
+	if vpcID != "" {
+		q.Set("vpcId", vpcID)
+	}
+	return c.get(ctx, fmt.Sprintf("/firewalls/%s/%s/%s",
+		url.PathEscape(account), url.PathEscape(region), url.PathEscape(name)), q)
 }
 
 // --- Instances ---
@@ -430,10 +521,15 @@ func (c *GateClient) FindImages(ctx context.Context, params map[string]string) (
 	return c.get(ctx, "/images/find", q)
 }
 
-func (c *GateClient) GetImageTags(ctx context.Context, account, repository string) ([]byte, error) {
+// GetImageTags lists the tags of an image repository. Gate assumes provider "aws" when
+// none is given, which no Docker registry account answers to.
+func (c *GateClient) GetImageTags(ctx context.Context, account, repository, provider string) ([]byte, error) {
 	q := url.Values{}
 	q.Set("account", account)
 	q.Set("repository", repository)
+	if provider != "" {
+		q.Set("provider", provider)
+	}
 	return c.get(ctx, "/images/tags", q)
 }
 

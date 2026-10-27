@@ -19,7 +19,9 @@
 **Authentication priority**: Bearer token > Basic auth > Session cookie > No auth. An x509 client certificate
 (`GATE_CERT_FILE` and `GATE_KEY_FILE`) is presented on top of whichever of those applies.
 
-Put them in a `.env` file (from `.env.example`) or set them in the environment. The npm package always runs
+Set them in the environment, or put them in a file (from `.env.example`) and name it in
+`SPINNAKER_MCP_ENV_FILE`. The server never reads a `.env` from the working directory on its own: MCP clients
+start it inside whatever project is open, and a stray `.env` there could redirect it to another Gate. The npm package always runs
 with `TRANSPORT=stdio`, and the Docker image sets `TRANSPORT=stdio` unless you override it.
 
 A value that is nothing but an unexpanded placeholder, such as `${GATE_TOKEN}`, counts as unset. Some MCP

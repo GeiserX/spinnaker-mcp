@@ -33,7 +33,7 @@ cd spinnaker-mcp
 
 cp .env.example .env && $EDITOR .env
 
-go run ./cmd/server
+SPINNAKER_MCP_ENV_FILE=.env go run ./cmd/server
 ```
 
 ## Kubernetes (Helm)

@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/geiserx/spinnaker-mcp/client"
@@ -68,6 +69,10 @@ func TestReadyzHandler_GateUp(t *testing.T) {
 	}
 	if data["gate_reachable"] != true {
 		t.Errorf("gate_reachable = %v, want true", data["gate_reachable"])
+	}
+	// The probe is unauthenticated, so it must not reveal where Gate lives.
+	if strings.Contains(string(body), gateSrv.URL) || strings.Contains(string(body), "gate_url") {
+		t.Errorf("/readyz discloses the Gate URL: %s", body)
 	}
 }
 
@@ -133,8 +138,8 @@ func TestPrintHelp_DoesNotPanic(t *testing.T) {
 }
 
 func TestToolsetsLabel(t *testing.T) {
-	if got := toolsetsLabel(""); got != "all" {
-		t.Errorf("toolsetsLabel(\"\") = %q, want %q", got, "all")
+	if got := toolsetsLabel(""); got != "readonly (default)" {
+		t.Errorf("toolsetsLabel(\"\") = %q, want %q", got, "readonly (default)")
 	}
 	if got := toolsetsLabel("pipelines,executions"); got != "pipelines,executions" {
 		t.Errorf("toolsetsLabel(\"pipelines,executions\") = %q, want %q", got, "pipelines,executions")
@@ -170,8 +175,8 @@ func TestPlaceholderToken_SendsNoAuthorization(t *testing.T) {
 	}
 }
 
-// The same for TOOLSETS: "${TOOLSETS}" means the default, all tools, not an unknown group.
-func TestPlaceholderToolsets_RegistersAllTools(t *testing.T) {
+// The same for TOOLSETS: "${TOOLSETS}" means the default (read-only), not an unknown group.
+func TestPlaceholderToolsets_RegistersDefaultTools(t *testing.T) {
 	gate, err := client.NewGate(client.GateOptions{BaseURL: "http://localhost:8084"})
 	if err != nil {
 		t.Fatalf("NewGate: %v", err)
@@ -190,7 +195,7 @@ func TestPlaceholderToolsets_RegistersAllTools(t *testing.T) {
 		t.Fatalf("Resolve: %v", err)
 	}
 	if len(got) != len(want) {
-		t.Errorf("registered %d tools, want all %d", len(got), len(want))
+		t.Errorf("registered %d tools, want the default %d", len(got), len(want))
 	}
 
 	t.Setenv("TOOLSETS", "readonly")
