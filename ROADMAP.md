@@ -297,8 +297,7 @@ High-value additions for interactive deployment workflows. These would let an LL
 
 ### Manual Judgment
 
-- [ ] `approve_stage` — Approve a manual judgment stage (via `PATCH /pipelines/{id}/stages/{stageId}`)
-- [ ] `reject_stage` — Reject a manual judgment stage
+- [x] `judge_stage` — Approve (continue) or reject (stop) a manual judgment stage (`PATCH /pipelines/{id}/stages/{stageId}`)
 
 ---
 

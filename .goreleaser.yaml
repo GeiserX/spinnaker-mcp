@@ -104,5 +104,9 @@ changelog:
   groups:
     - title: "Features"
       regexp: '^feat'
+      order: 0
     - title: "Fixes"
       regexp: '^fix'
+      order: 1
+    - title: "Other changes"
+      order: 999
