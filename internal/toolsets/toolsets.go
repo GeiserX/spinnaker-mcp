@@ -81,6 +81,7 @@ func BuildTools(gate *client.GateClient) map[string][]ToolEntry {
 	add(GroupExecutions, tools.NewResumeExecution)
 	add(GroupExecutions, tools.NewRestartStage)
 	add(GroupExecutions, tools.NewEvaluateExpression)
+	add(GroupExecutions, tools.NewJudgeStage)
 
 	// Strategies
 	add(GroupStrategies, tools.NewListStrategies)
@@ -111,8 +112,8 @@ func BuildTools(gate *client.GateClient) map[string][]ToolEntry {
 	return reg
 }
 
-// isReadOnly returns true if the tool annotation marks it as read-only.
-func isReadOnly(t mcp.Tool) bool {
+// IsReadOnly reports whether the tool's annotations mark it read-only.
+func IsReadOnly(t mcp.Tool) bool {
 	if t.Annotations.ReadOnlyHint != nil {
 		return *t.Annotations.ReadOnlyHint
 	}
@@ -121,9 +122,16 @@ func isReadOnly(t mcp.Tool) bool {
 
 // Resolve takes the raw toolsets string (comma-separated) and returns the
 // filtered list of ToolEntry to register. Returns an error if any name is invalid.
+//
+// An empty string means read-only: write tools (trigger, cancel, save, update,
+// delete, judge) are registered only when the operator names them, with
+// "all", "mutating" or a group such as "pipelines".
 func Resolve(raw string, allTools map[string][]ToolEntry) ([]ToolEntry, error) {
 	raw = strings.TrimSpace(raw)
-	if raw == "" || strings.EqualFold(raw, MetaAll) {
+	if raw == "" {
+		return filterByAnnotation(allTools, true), nil
+	}
+	if strings.EqualFold(raw, MetaAll) {
 		return flatten(allTools, AllGroups), nil
 	}
 
@@ -202,7 +210,7 @@ func filterByAnnotation(allTools map[string][]ToolEntry, wantReadOnly bool) []To
 	var result []ToolEntry
 	for _, g := range AllGroups {
 		for _, entry := range allTools[g] {
-			if isReadOnly(entry.Tool) == wantReadOnly {
+			if IsReadOnly(entry.Tool) == wantReadOnly {
 				result = append(result, entry)
 			}
 		}

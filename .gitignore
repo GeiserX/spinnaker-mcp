@@ -28,3 +28,6 @@ site/
 
 # Beads: bead text lives in the Dolt tracker only, never in git
 .beads/*.jsonl
+
+# The release workflow adds this to the npm package; never commit it.
+/checksums.txt

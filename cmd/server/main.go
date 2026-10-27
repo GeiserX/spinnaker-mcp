@@ -5,16 +5,16 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"net"
 	"net/http"
 	"os"
-	"strconv"
+	"os/signal"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/geiserx/spinnaker-mcp/client"
 	"github.com/geiserx/spinnaker-mcp/config"
-	"github.com/geiserx/spinnaker-mcp/internal/prompts"
-	"github.com/geiserx/spinnaker-mcp/internal/resources"
 	"github.com/geiserx/spinnaker-mcp/internal/toolsets"
 	"github.com/geiserx/spinnaker-mcp/version"
 	"github.com/mark3labs/mcp-go/server"
@@ -65,66 +65,56 @@ func main() {
 		log.Fatalf("Invalid toolsets: %v", err)
 	}
 
-	s := server.NewMCPServer(
-		"Spinnaker MCP",
-		version.Version,
-		server.WithToolCapabilities(true),
-		server.WithResourceCapabilities(false, false),
-		server.WithPromptCapabilities(false),
-		server.WithRecovery(),
-	)
-
-	// Register selected tools
-	for _, entry := range selectedTools {
-		s.AddTool(entry.Tool, entry.Handler)
-	}
+	s := newMCPServer(gate, selectedTools)
 	log.Printf("Registered %d tools (toolsets: %s)", len(selectedTools), toolsetsLabel(toolsetsFlag))
 
-	// Register resources and prompts (always, regardless of toolsets)
-	resources.Register(s, gate)
-	prompts.Register(s)
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
 
 	transport := strings.ToLower(config.Getenv("TRANSPORT"))
 	if transport == "stdio" {
 		stdioSrv := server.NewStdioServer(s)
 		log.Println("Spinnaker MCP running on stdio")
-		if err := stdioSrv.Listen(context.Background(), os.Stdin, os.Stdout); err != nil {
+		if err := stdioSrv.Listen(ctx, os.Stdin, os.Stdout); err != nil && ctx.Err() == nil {
 			log.Fatalf("stdio server error: %v", err)
 		}
-	} else {
-		portStr := config.Getenv("MCP_PORT")
-		if portStr == "" {
-			portStr = "8085"
-		}
-		p, err := strconv.Atoi(portStr)
-		if err != nil || p < 1 || p > 65535 {
-			log.Fatalf("Invalid MCP_PORT %q: must be 1-65535", portStr)
-		}
-		bindAddr := config.Getenv("MCP_BIND_ADDR")
-		if bindAddr == "" {
-			bindAddr = "127.0.0.1"
-		}
+		return
+	}
 
-		httpSrv := server.NewStreamableHTTPServer(s)
-
-		mux := http.NewServeMux()
-		mux.Handle("/mcp", httpSrv)
-		mux.HandleFunc("/healthz", healthzHandler)
-		mux.HandleFunc("/readyz", readyzHandler(gate))
-
-		addr := bindAddr + ":" + portStr
-		log.Printf("Spinnaker MCP listening on %s (health: /healthz, /readyz)", addr)
-		srv := &http.Server{
-			Addr:              addr,
-			Handler:           mux,
-			ReadHeaderTimeout: 10 * time.Second,
-			ReadTimeout:       30 * time.Second,
-			WriteTimeout:      30 * time.Second,
-			IdleTimeout:       120 * time.Second,
-		}
-		if err := srv.ListenAndServe(); err != nil {
-			log.Fatalf("server error: %v", err)
-		}
+	httpCfg, err := loadHTTPConfig()
+	if err != nil {
+		log.Fatal(err)
+	}
+	handler, err := newHTTPHandler(s, gate, httpCfg)
+	if err != nil {
+		log.Fatalf("HTTP setup: %v", err)
+	}
+	addr := net.JoinHostPort(httpCfg.bindAddr, httpCfg.port)
+	auth := "no bearer token (loopback only)"
+	if httpCfg.token != "" {
+		auth = "bearer token required"
+	}
+	log.Printf("Spinnaker MCP listening on %s, %s (health: /healthz, /readyz)", addr, auth)
+	srv := &http.Server{
+		Addr:              addr,
+		Handler:           handler,
+		ReadHeaderTimeout: 10 * time.Second,
+		ReadTimeout:       30 * time.Second,
+		// Longer than the 30s Gate client timeout, so a slow Gate call still gets its answer out.
+		WriteTimeout:   90 * time.Second,
+		IdleTimeout:    120 * time.Second,
+		MaxHeaderBytes: 64 << 10,
+	}
+	errCh := make(chan error, 1)
+	go func() { errCh <- srv.ListenAndServe() }()
+	select {
+	case err := <-errCh:
+		log.Fatalf("server error: %v", err)
+	case <-ctx.Done():
+		log.Println("Shutting down")
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		_ = srv.Shutdown(shutdownCtx)
 	}
 }
 
@@ -151,7 +141,7 @@ func toolsetsSpec(flag string) string {
 
 func toolsetsLabel(raw string) string {
 	if raw == "" {
-		return "all"
+		return toolsets.MetaReadonly + " (default)"
 	}
 	return raw
 }
@@ -185,7 +175,6 @@ func readyzHandler(gate *client.GateClient) http.HandlerFunc {
 		w.WriteHeader(code)
 		json.NewEncoder(w).Encode(map[string]any{
 			"status":         status,
-			"gate_url":       gate.BaseURL(),
 			"gate_reachable": reachable,
 		})
 	}
@@ -201,20 +190,20 @@ func printHelp() {
 	fmt.Println("Flags:")
 	fmt.Println("  --version, -v          Print version and exit")
 	fmt.Println("  --help, -h             Show this help message")
-	fmt.Println("  --toolsets=GROUPS      Comma-separated tool groups to enable (default: all)")
+	fmt.Println("  --toolsets=GROUPS      Comma-separated tool groups to enable (default: readonly)")
 	fmt.Println()
 	fmt.Println("Toolset groups:")
 	fmt.Println("  applications           Application listing and details (2 tools)")
 	fmt.Println("  pipelines              Pipeline CRUD, trigger, history (7 tools)")
-	fmt.Println("  executions             Execution lifecycle and search (8 tools)")
+	fmt.Println("  executions             Execution lifecycle, search and manual judgment (9 tools)")
 	fmt.Println("  strategies             Deployment strategy management (3 tools)")
 	fmt.Println("  infrastructure         Server groups, clusters, LBs, firewalls, images, networks, accounts (16 tools)")
 	fmt.Println("  tasks                  Task status (1 tool)")
 	fmt.Println()
 	fmt.Println("Meta-groups:")
-	fmt.Println("  all                    All tool groups (default)")
-	fmt.Println("  readonly               Only read-only tools (27 tools)")
-	fmt.Println("  mutating               Only mutating and destructive tools (10 tools)")
+	fmt.Println("  readonly               Only read-only tools (27 tools, the default)")
+	fmt.Println("  all                    Every tool, including the 11 that change Spinnaker")
+	fmt.Println("  mutating               Only the tools that change Spinnaker (11 tools)")
 	fmt.Println()
 	fmt.Println("Environment variables:")
 	fmt.Println("  GATE_URL               Spinnaker Gate API URL (default: http://localhost:8084)")
@@ -229,5 +218,8 @@ func printHelp() {
 	fmt.Println("  TRANSPORT              'stdio' for stdio transport (default: HTTP)")
 	fmt.Println("  MCP_PORT               HTTP listen port (default: 8085)")
 	fmt.Println("  MCP_BIND_ADDR          HTTP bind address (default: 127.0.0.1)")
-	fmt.Println("  TOOLSETS               Same as --toolsets flag (flag takes precedence)")
+	fmt.Println("  MCP_AUTH_TOKEN         Bearer token every /mcp request must carry; required unless bound to loopback")
+	fmt.Println("  MCP_ALLOWED_ORIGINS    Browser origins allowed to call /mcp cross-origin (comma-separated)")
+	fmt.Println("  SPINNAKER_MCP_ENV_FILE dotenv file to load at startup (never read implicitly)")
+	fmt.Println("  TOOLSETS               Same as --toolsets flag (flag takes precedence; set all to enable writes)")
 }

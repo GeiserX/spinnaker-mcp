@@ -16,13 +16,15 @@ func NewListExecutions(gate *client.GateClient) (mcp.Tool, server.ToolHandlerFun
 			mcp.Required(),
 			mcp.Description("Application name as registered in Spinnaker"),
 		),
-		mcp.WithNumber("limit",
-			mcp.Description("Maximum number of executions to return (default: 25)"),
+		mcp.WithInteger("limit",
+			mcp.Description("Maximum number of executions to return (default 25)"),
+			mcp.Min(1), mcp.Max(100),
 		),
 		mcp.WithString("statuses",
 			mcp.Description("Comma-separated execution statuses to filter by (e.g. RUNNING,SUCCEEDED,TERMINAL,CANCELED)"),
 		),
-		readOnly(),
+		readOnly("List executions"),
+		jsonOutput(),
 	)
 
 	handler := func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
@@ -31,14 +33,14 @@ func NewListExecutions(gate *client.GateClient) (mcp.Tool, server.ToolHandlerFun
 			return mcp.NewToolResultError(err.Error()), nil
 		}
 
-		limit := req.GetInt("limit", 25)
+		limit := clamp(req.GetInt("limit", 25), 1, 100)
 		statuses := req.GetString("statuses", "")
 
 		resp, err := gate.ListExecutions(ctx, app, limit, statuses)
 		if err != nil {
 			return mcp.NewToolResultError(err.Error()), nil
 		}
-		return mcp.NewToolResultText(fmt.Sprintf("Executions for %q (limit %d):\n%s", app, limit, string(resp))), nil
+		return jsonResult(fmt.Sprintf("Executions for %q (limit %d):\n%s", app, limit, string(resp)), resp), nil
 	}
 
 	return tool, handler

@@ -16,7 +16,8 @@ func NewGetTask(gate *client.GateClient) (mcp.Tool, server.ToolHandlerFunc) {
 			mcp.Required(),
 			mcp.Description("Orchestration task ID returned by Spinnaker when an operation is submitted"),
 		),
-		readOnly(),
+		readOnly("Get task"),
+		jsonOutput(),
 	)
 
 	handler := func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
@@ -29,7 +30,7 @@ func NewGetTask(gate *client.GateClient) (mcp.Tool, server.ToolHandlerFunc) {
 		if err != nil {
 			return mcp.NewToolResultError(err.Error()), nil
 		}
-		return mcp.NewToolResultText(fmt.Sprintf("Task %s:\n%s", id, string(resp))), nil
+		return jsonResult(fmt.Sprintf("Task %s:\n%s", id, string(resp)), resp), nil
 	}
 
 	return tool, handler

@@ -24,7 +24,8 @@ func NewGetCluster(gate *client.GateClient) (mcp.Tool, server.ToolHandlerFunc) {
 			mcp.Required(),
 			mcp.Description("Cluster name as shown in the Spinnaker UI"),
 		),
-		readOnly(),
+		readOnly("Get cluster"),
+		jsonOutput(),
 	)
 
 	handler := func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
@@ -45,7 +46,7 @@ func NewGetCluster(gate *client.GateClient) (mcp.Tool, server.ToolHandlerFunc) {
 		if err != nil {
 			return mcp.NewToolResultError(err.Error()), nil
 		}
-		return mcp.NewToolResultText(fmt.Sprintf("Cluster %q in %q (account %q):\n%s", cluster, app, account, string(resp))), nil
+		return jsonResult(fmt.Sprintf("Cluster %q in %q (account %q):\n%s", cluster, app, account, string(resp)), resp), nil
 	}
 
 	return tool, handler

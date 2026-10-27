@@ -17,7 +17,19 @@ gate:
 transport: http
 port: 8085
 bindAddr: "0.0.0.0"
-toolsets: "all"
+# readonly registers only the tools that read Spinnaker. Set "all" (or a list of
+# groups) only if the MCP clients must trigger, cancel, edit or judge pipelines.
+toolsets: "readonly"
+
+# Every /mcp request must carry "Authorization: Bearer <token>": the pod holds the Gate
+# credential, so anything that reaches the Service would otherwise act with it. The
+# chart refuses to render without one of these.
+mcpAuth:
+  # Name of an existing Secret holding the token.
+  existingSecret: ""
+  existingSecretKey: MCP_AUTH_TOKEN
+  # Or the token itself (for example: openssl rand -hex 32); the chart stores it in a Secret.
+  token: ""
 
 image:
   repository: drumsergio/spinnaker-mcp

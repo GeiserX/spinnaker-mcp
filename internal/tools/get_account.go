@@ -16,7 +16,8 @@ func NewGetAccount(gate *client.GateClient) (mcp.Tool, server.ToolHandlerFunc) {
 			mcp.Required(),
 			mcp.Description("Spinnaker account name"),
 		),
-		readOnly(),
+		readOnly("Get account"),
+		jsonOutput(),
 	)
 
 	handler := func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
@@ -29,7 +30,7 @@ func NewGetAccount(gate *client.GateClient) (mcp.Tool, server.ToolHandlerFunc) {
 		if err != nil {
 			return mcp.NewToolResultError(err.Error()), nil
 		}
-		return mcp.NewToolResultText(fmt.Sprintf("Account %q:\n%s", account, string(resp))), nil
+		return jsonResult(fmt.Sprintf("Account %q:\n%s", account, string(resp)), resp), nil
 	}
 
 	return tool, handler

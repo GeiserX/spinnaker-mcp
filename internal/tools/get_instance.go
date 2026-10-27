@@ -24,7 +24,8 @@ func NewGetInstance(gate *client.GateClient) (mcp.Tool, server.ToolHandlerFunc) 
 			mcp.Required(),
 			mcp.Description("Cloud provider instance ID (e.g., i-0abc1234def56789 for AWS)"),
 		),
-		readOnly(),
+		readOnly("Get instance"),
+		jsonOutput(),
 	)
 
 	handler := func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
@@ -45,7 +46,7 @@ func NewGetInstance(gate *client.GateClient) (mcp.Tool, server.ToolHandlerFunc) 
 		if err != nil {
 			return mcp.NewToolResultError(err.Error()), nil
 		}
-		return mcp.NewToolResultText(fmt.Sprintf("Instance %q in %s/%s:\n%s", instanceID, account, region, string(resp))), nil
+		return jsonResult(fmt.Sprintf("Instance %q in %s/%s:\n%s", instanceID, account, region, string(resp)), resp), nil
 	}
 
 	return tool, handler

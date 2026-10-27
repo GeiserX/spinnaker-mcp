@@ -16,7 +16,8 @@ func NewListLoadBalancers(gate *client.GateClient) (mcp.Tool, server.ToolHandler
 			mcp.Required(),
 			mcp.Description("Application name as registered in Spinnaker"),
 		),
-		readOnly(),
+		readOnly("List load balancers"),
+		jsonOutput(),
 	)
 
 	handler := func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
@@ -29,7 +30,7 @@ func NewListLoadBalancers(gate *client.GateClient) (mcp.Tool, server.ToolHandler
 		if err != nil {
 			return mcp.NewToolResultError(err.Error()), nil
 		}
-		return mcp.NewToolResultText(fmt.Sprintf("Load balancers for %q:\n%s", app, string(resp))), nil
+		return jsonResult(fmt.Sprintf("Load balancers for %q:\n%s", app, string(resp)), resp), nil
 	}
 
 	return tool, handler

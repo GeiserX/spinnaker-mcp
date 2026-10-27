@@ -13,13 +13,18 @@
 | `GATE_COOKIE_FILE` | _(per host)_ | File holding that cookie; default `$XDG_CONFIG_HOME/spinnaker-mcp/cookies/<host>`, which `spinnaker-mcp login` writes |
 | `TRANSPORT` | _(empty = HTTP)_ | Set to `stdio` for stdio transport |
 | `MCP_PORT` | `8085` | HTTP transport port (ignored when TRANSPORT=stdio) |
-| `MCP_BIND_ADDR` | `127.0.0.1` | HTTP transport bind address (set to `0.0.0.0` to listen on all interfaces) |
-| `TOOLSETS` | _(empty = all)_ | Tool groups to register, see [Toolsets](#toolsets) |
+| `MCP_BIND_ADDR` | `127.0.0.1` | HTTP transport bind address; anything but loopback needs `MCP_AUTH_TOKEN` |
+| `MCP_AUTH_TOKEN` | _(empty)_ | Bearer token every `/mcp` request must carry, see [HTTP transport](#http-transport) |
+| `MCP_ALLOWED_ORIGINS` | _(empty)_ | Browser origins allowed to call `/mcp` cross-origin, comma-separated (`https://host[:port]`) |
+| `TOOLSETS` | `readonly` | Tool groups to register, see [Toolsets](#toolsets) |
+| `SPINNAKER_MCP_ENV_FILE` | _(empty)_ | A dotenv file to load at start |
 
 **Authentication priority**: Bearer token > Basic auth > Session cookie > No auth. An x509 client certificate
 (`GATE_CERT_FILE` and `GATE_KEY_FILE`) is presented on top of whichever of those applies.
 
-Put them in a `.env` file (from `.env.example`) or set them in the environment. The npm package always runs
+Set them in the environment, or put them in a file (from `.env.example`) and name it in
+`SPINNAKER_MCP_ENV_FILE`. The server never reads a `.env` from the working directory on its own: MCP clients
+start it inside whatever project is open, and a stray `.env` there could redirect it to another Gate. The npm package always runs
 with `TRANSPORT=stdio`, and the Docker image sets `TRANSPORT=stdio` unless you override it.
 
 A value that is nothing but an unexpanded placeholder, such as `${GATE_TOKEN}`, counts as unset. Some MCP
@@ -47,7 +52,8 @@ picks it up on its own whenever `GATE_URL` points at that host, so the client co
 `GATE_URL`. When the session expires the tools fail with the same `gate requires a login session` message:
 run `login` again.
 
-`--cookie=VALUE` skips the prompt, `--cookie-file=PATH` stores it elsewhere, `--no-browser` only prints
+The prompt does not echo what you paste. `--cookie=VALUE` skips the prompt but leaves the cookie in your
+shell history and the process list, so prefer the prompt or piping it on stdin; `--cookie-file=PATH` stores it elsewhere, `--no-browser` only prints
 the URL. `GATE_COOKIE` and `GATE_COOKIE_FILE` set the cookie directly for a server that cannot run
 `login`, for example in a container. The cookie is a credential: whoever holds it is you on that Gate
 until it expires, so keep it out of shared configuration and version control.
@@ -59,20 +65,23 @@ is not registered does not exist for the client. Resources and prompts are regis
 
 | Value | Tools |
 |-------|-------|
-| `all` (default) | all 37 |
-| `readonly` | the 27 that only read |
-| `mutating` | the 10 that change Spinnaker, the two deletes included |
+| `readonly` (default) | the 27 that only read |
+| `all` | all 38 |
+| `mutating` | the 11 that change Spinnaker |
 | `applications` | 2 |
 | `pipelines` | 7 |
-| `executions` | 8 |
+| `executions` | 9 |
 | `strategies` | 3 |
 | `infrastructure` | 16 |
 | `tasks` | 1 |
 
 Groups combine with commas: `TOOLSETS=pipelines,executions`. `all`, `readonly` and `mutating` stand alone;
-combined with each other or with a group, the server exits at start with `Invalid toolsets`. To keep an
-assistant from changing anything, add `"TOOLSETS": "readonly"` to the `env` block of your client
-configuration. [Usage](usage.md#tools) lists which tools change Spinnaker.
+combined with each other or with a group, the server exits at start with `Invalid toolsets`.
+
+With no `TOOLSETS` the server is read-only: an assistant cannot trigger, cancel, edit, delete or judge
+anything, even if text inside a Gate response tells it to. To let it, add `"TOOLSETS": "all"` (or the groups
+it needs) to the `env` block of your client configuration. [Usage](usage.md#tools) lists which tools change
+Spinnaker.
 
 ## HTTP transport
 
@@ -81,13 +90,22 @@ When `TRANSPORT` is anything but `stdio`, the server listens on `MCP_BIND_ADDR:M
 
 | Path | Answers |
 |------|---------|
-| `/mcp` | MCP over streamable HTTP |
+| `/mcp` | MCP over stateless Streamable HTTP, both protocol eras |
 | `/healthz` | `200` with `{"status":"ok","version":"..."}` |
-| `/readyz` | `200` when Gate answers a `HEAD /applications` within 5 s with any status below 500, otherwise `503`; the body carries `gate_url` and `gate_reachable` |
+| `/readyz` | `200` when Gate answers a `HEAD /applications` within 5 s with any status below 500, otherwise `503`; the body is `{"status":...,"gate_reachable":...}` |
 
 `/readyz` proves Gate is reachable, not that the credentials work: a `401` from Gate still counts as ready.
 
-`/mcp` has no authentication of its own. Anyone who reaches it acts with the Gate credentials the server
-holds, so keep the default loopback address, or put an authenticating proxy in front and consider
-`TOOLSETS=readonly`. In Docker, `127.0.0.1` is the container's own loopback: run the HTTP transport with
-`-e TRANSPORT=http -e MCP_BIND_ADDR=0.0.0.0 -p 127.0.0.1:8085:8085` so only the host reaches it.
+Anyone who reaches `/mcp` acts with the Gate credentials the server holds, so it is guarded:
+
+- **Bearer token.** With `MCP_AUTH_TOKEN` set, every `/mcp` request must send
+  `Authorization: Bearer <token>`; anything else gets `401`. The server refuses to start on an address
+  that is not loopback without it. Generate one with `openssl rand -hex 32`. `/healthz` and `/readyz` stay
+  open for probes and reveal nothing about Gate.
+- **Origin.** A browser request from another site gets `403`, so a web page cannot drive a server on your
+  machine. Clients that are not browsers send no `Origin` and are unaffected. `MCP_ALLOWED_ORIGINS` lets
+  named browser origins through.
+- **Size and time.** Request bodies are capped at 4 MiB; headers must arrive within 10 s.
+
+In Docker, `127.0.0.1` is the container's own loopback, so the HTTP transport needs `0.0.0.0` and therefore
+a token: `-e TRANSPORT=http -e MCP_BIND_ADDR=0.0.0.0 -e MCP_AUTH_TOKEN -p 127.0.0.1:8085:8085`.

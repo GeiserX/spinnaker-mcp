@@ -16,10 +16,12 @@ func NewGetPipelineHistory(gate *client.GateClient) (mcp.Tool, server.ToolHandle
 			mcp.Required(),
 			mcp.Description("Pipeline configuration ID"),
 		),
-		mcp.WithNumber("limit",
-			mcp.Description("Maximum number of history entries to return (default: 10)"),
+		mcp.WithInteger("limit",
+			mcp.Description("Maximum number of history entries to return (default 10)"),
+			mcp.Min(1), mcp.Max(100),
 		),
-		readOnly(),
+		readOnly("Pipeline config history"),
+		jsonOutput(),
 	)
 
 	handler := func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
@@ -28,13 +30,13 @@ func NewGetPipelineHistory(gate *client.GateClient) (mcp.Tool, server.ToolHandle
 			return mcp.NewToolResultError(err.Error()), nil
 		}
 
-		limit := req.GetInt("limit", 10)
+		limit := clamp(req.GetInt("limit", 10), 1, 100)
 
 		resp, err := gate.GetPipelineHistory(ctx, configID, limit)
 		if err != nil {
 			return mcp.NewToolResultError(err.Error()), nil
 		}
-		return mcp.NewToolResultText(fmt.Sprintf("Pipeline history for %s (limit %d):\n%s", configID, limit, string(resp))), nil
+		return jsonResult(fmt.Sprintf("Pipeline history for %s (limit %d):\n%s", configID, limit, string(resp)), resp), nil
 	}
 
 	return tool, handler

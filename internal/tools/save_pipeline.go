@@ -17,7 +17,7 @@ func NewSavePipeline(gate *client.GateClient) (mcp.Tool, server.ToolHandlerFunc)
 			mcp.Required(),
 			mcp.Description("Full pipeline JSON definition"),
 		),
-		mutating(),
+		destructive("Save pipeline config", false),
 	)
 
 	handler := func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {

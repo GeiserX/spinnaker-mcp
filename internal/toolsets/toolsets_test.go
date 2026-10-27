@@ -40,14 +40,21 @@ func fakeTools() map[string][]ToolEntry {
 	}
 }
 
-func TestResolve_EmptyDefaultsToAll(t *testing.T) {
+// With no TOOLSETS the server must not expose a single write tool: a prompt injected
+// through Gate data could otherwise trigger, cancel or delete pipelines.
+func TestResolve_EmptyDefaultsToReadonly(t *testing.T) {
 	tools := fakeTools()
 	result, err := Resolve("", tools)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if len(result) != 9 {
-		t.Errorf("expected 9 tools, got %d", len(result))
+	if len(result) != 7 {
+		t.Errorf("expected 7 read-only tools, got %d", len(result))
+	}
+	for _, e := range result {
+		if !IsReadOnly(e.Tool) {
+			t.Errorf("default toolset registered write tool %s", e.Tool.Name)
+		}
 	}
 }
 
@@ -175,7 +182,7 @@ func TestIsReadOnly(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := isReadOnly(tt.tool); got != tt.want {
+			if got := IsReadOnly(tt.tool); got != tt.want {
 				t.Errorf("isReadOnly() = %v, want %v", got, tt.want)
 			}
 		})

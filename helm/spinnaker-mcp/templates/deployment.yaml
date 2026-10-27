@@ -1,3 +1,4 @@
+{{- include "spinnaker-mcp.requireMcpAuth" . -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -44,16 +45,23 @@ spec:
             - secretRef:
                 name: {{ include "spinnaker-mcp.fullname" . }}
             {{- end }}
+          env:
+            - name: MCP_AUTH_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "spinnaker-mcp.mcpAuthSecretName" . }}
+                  key: {{ include "spinnaker-mcp.mcpAuthSecretKey" . }}
+            {{- if .Values.gate.tls.certSecret }}
+            - name: GATE_CERT_FILE
+              value: /etc/spinnaker-mcp/certs/tls.crt
+            - name: GATE_KEY_FILE
+              value: /etc/spinnaker-mcp/certs/tls.key
+            {{- end }}
           {{- if .Values.gate.tls.certSecret }}
           volumeMounts:
             - name: gate-cert
               mountPath: /etc/spinnaker-mcp/certs
               readOnly: true
-          env:
-            - name: GATE_CERT_FILE
-              value: /etc/spinnaker-mcp/certs/tls.crt
-            - name: GATE_KEY_FILE
-              value: /etc/spinnaker-mcp/certs/tls.key
           {{- end }}
           {{- if eq .Values.transport "http" }}
           ports:

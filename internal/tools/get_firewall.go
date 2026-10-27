@@ -24,7 +24,15 @@ func NewGetFirewall(gate *client.GateClient) (mcp.Tool, server.ToolHandlerFunc) 
 			mcp.Required(),
 			mcp.Description("Firewall rule name"),
 		),
-		readOnly(),
+		mcp.WithString("provider",
+			mcp.Description("Cloud provider of the account (default aws, as in Gate; e.g. gce, azure, kubernetes)"),
+			mcp.DefaultString("aws"),
+		),
+		mcp.WithString("vpc_id",
+			mcp.Description("VPC ID, to tell apart AWS security groups with the same name (e.g. vpc-0abc123)"),
+		),
+		readOnly("Get firewall"),
+		jsonOutput(),
 	)
 
 	handler := func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
@@ -41,11 +49,11 @@ func NewGetFirewall(gate *client.GateClient) (mcp.Tool, server.ToolHandlerFunc) 
 			return mcp.NewToolResultError(err.Error()), nil
 		}
 
-		resp, err := gate.GetFirewall(ctx, account, region, name)
+		resp, err := gate.GetFirewall(ctx, account, region, name, req.GetString("provider", "aws"), req.GetString("vpc_id", ""))
 		if err != nil {
 			return mcp.NewToolResultError(err.Error()), nil
 		}
-		return mcp.NewToolResultText(fmt.Sprintf("Firewall %q in %s/%s:\n%s", name, account, region, string(resp))), nil
+		return jsonResult(fmt.Sprintf("Firewall %q in %s/%s:\n%s", name, account, region, string(resp)), resp), nil
 	}
 
 	return tool, handler
