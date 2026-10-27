@@ -4,7 +4,7 @@
 MCP (Model Context Protocol) server that exposes any Spinnaker instance as an MCP v1 server via the Gate API. Provides tools for managing applications, pipelines, executions, infrastructure, and deployment strategies.
 
 ## Tech Stack
-- Go (go.mod: go 1.25.5, toolchain go1.27.3)
+- Go (go.mod: go 1.26.0, toolchain go1.27.3)
 - mark3labs/mcp-go v1.4.0: MCP 2026-07-28 plus the legacy handshake (2025-11-25 down to 2024-11-05), over stdio and stateless Streamable HTTP
 - Docker (image: `drumsergio/spinnaker-mcp`)
 - npm package (`spinnaker-mcp`) for npx usage

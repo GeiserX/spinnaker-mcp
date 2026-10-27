@@ -118,8 +118,17 @@ async function ensureBinary({ log = () => {} } = {}) {
       err.code = "EINTEGRITY";
       throw err;
     }
-    // No shell: fixed argv. bsdtar (macOS, Windows 10+) also reads the Windows zip.
-    execFileSync("tar", ["-xf", archive, "-C", tmp, BIN_NAME], { stdio: "ignore" });
+    // No shell: fixed argv. bsdtar (macOS, Windows 10+) also reads the Windows zip. On Windows call the
+    // system tar.exe by path: a GNU tar earlier in PATH (Git Bash) cannot read zip and treats "C:" as a host.
+    const tar = process.platform === "win32"
+      ? path.join(process.env.SystemRoot || "C:\\Windows", "System32", "tar.exe")
+      : "tar";
+    try {
+      execFileSync(tar, ["-xf", archive, "-C", tmp, BIN_NAME], { stdio: ["ignore", "ignore", "pipe"] });
+    } catch (e) {
+      const detail = e.stderr ? String(e.stderr).trim() : e.message;
+      throw new Error(`Could not extract ${name}: ${detail}`);
+    }
     const extracted = path.join(tmp, BIN_NAME);
     if (process.platform !== "win32") {
       fs.chmodSync(extracted, 0o755);
