@@ -69,3 +69,29 @@ Image tag — defaults to v + Chart.AppVersion; custom tags used as-is.
 v{{- .Chart.AppVersion -}}
 {{- end -}}
 {{- end }}
+
+{{/*
+The chart serves /mcp on the pod network with the Gate credential, so it refuses to
+render without a bearer token for it.
+*/}}
+{{- define "spinnaker-mcp.requireMcpAuth" -}}
+{{- if not (or .Values.mcpAuth.existingSecret .Values.mcpAuth.token) }}
+{{- fail "mcpAuth.existingSecret or mcpAuth.token is required: /mcp acts with the Gate credential, so every request must carry a bearer token. Create one with: openssl rand -hex 32" }}
+{{- end }}
+{{- end }}
+
+{{- define "spinnaker-mcp.mcpAuthSecretName" -}}
+{{- if .Values.mcpAuth.existingSecret }}
+{{- .Values.mcpAuth.existingSecret }}
+{{- else }}
+{{- printf "%s-mcp-auth" (include "spinnaker-mcp.fullname" .) }}
+{{- end }}
+{{- end }}
+
+{{- define "spinnaker-mcp.mcpAuthSecretKey" -}}
+{{- if .Values.mcpAuth.existingSecret }}
+{{- .Values.mcpAuth.existingSecretKey | default "MCP_AUTH_TOKEN" }}
+{{- else }}
+{{- "MCP_AUTH_TOKEN" }}
+{{- end }}
+{{- end }}
