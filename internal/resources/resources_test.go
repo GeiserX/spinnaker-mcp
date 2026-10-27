@@ -38,7 +38,7 @@ func TestTextResource_EmptyObjectResource(t *testing.T) {
 		"spinnaker://execution/01J":            "{}",
 		"spinnaker://application/app":          "{}",
 		"spinnaker://account/prod":             "{}",
-		"spinnaker://application/app/clusters": "[]",
+		"spinnaker://application/app/clusters": "{}",
 		"spinnaker://applications":             "[]",
 	} {
 		if got := textResource(uri, nil).Text; got != want {

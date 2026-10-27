@@ -231,7 +231,8 @@ func textResource(uri string, data []byte) mcp.TextResourceContents {
 	text := string(data)
 	if text == "" {
 		text = "[]"
-		if p := strings.TrimPrefix(uri, "spinnaker://"); strings.Count(p, "/") == 1 { // application/{name}, execution/{id}, account/{name}
+		// application/{name}, execution/{id}, account/{name}, and clusters (keyed by account) are objects.
+		if p := strings.TrimPrefix(uri, "spinnaker://"); strings.Count(p, "/") == 1 || strings.HasSuffix(p, "/clusters") {
 			text = "{}"
 		}
 	}

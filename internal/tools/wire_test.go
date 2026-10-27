@@ -278,6 +278,7 @@ func TestEvaluateExpression_Guard(t *testing.T) {
 	for _, expr := range []string{
 		"${new\tjava.io.File('/etc').list()}",
 		"${new\tcom.example.Exploit()}",
+		"${NEW java.util.Date()}",
 		"${new\njava.net.URL('http://169.254.169.254/').openStream()}",
 		"${T (java.lang.Runtime).getRuntime()}",
 		"${''.getClass().forName('x')}",

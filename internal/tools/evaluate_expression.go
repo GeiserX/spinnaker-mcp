@@ -15,7 +15,7 @@ import (
 // restricted context, which is the real boundary; this check stops the obvious attempts
 // before they reach Gate. It is case-sensitive, like Java identifiers, so properties such
 // as parameters.runtimeVersion pass, and it matches "new" followed by any whitespace.
-var dangerousSpEL = regexp.MustCompile(`\bT\s*\(|\bnew\s|\.class\b|\.getClass\s*\(|\bjava\.(io|net|nio|lang\.reflect|lang\.invoke)\.|\b(Runtime|ProcessBuilder|Thread|ClassLoader|URLClassLoader|ScriptEngine|ScriptEngineManager|MethodHandles?|System)\b`)
+var dangerousSpEL = regexp.MustCompile(`\bT\s*\(|(?i:\bnew\s)|\.class\b|\.getClass\s*\(|\bjava\.(io|net|nio|lang\.reflect|lang\.invoke)\.|\b(Runtime|ProcessBuilder|Thread|ClassLoader|URLClassLoader|ScriptEngine|ScriptEngineManager|MethodHandles?|System)\b`)
 
 func NewEvaluateExpression(gate *client.GateClient) (mcp.Tool, server.ToolHandlerFunc) {
 	tool := mcp.NewTool("evaluate_expression",
