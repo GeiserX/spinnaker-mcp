@@ -64,6 +64,8 @@ dockers:
       - .goreleaser.yaml
     build_flag_templates:
       - "--platform=linux/amd64"
+      - "--build-arg=VERSION={{ .Version }}"
+      - "--build-arg=COMMIT={{ .ShortCommit }}"
   - image_templates:
       - "drumsergio/spinnaker-mcp:{{ .Tag }}-arm64"
       - "drumsergio/spinnaker-mcp:latest-arm64"
@@ -82,6 +84,8 @@ dockers:
       - .goreleaser.yaml
     build_flag_templates:
       - "--platform=linux/arm64"
+      - "--build-arg=VERSION={{ .Version }}"
+      - "--build-arg=COMMIT={{ .ShortCommit }}"
 
 docker_manifests:
   - name_template: 'drumsergio/spinnaker-mcp:{{ .Tag }}'
