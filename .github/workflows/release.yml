@@ -4,6 +4,9 @@ on:
   push:
     tags: ["v*.*.*"]
 
+permissions:
+  contents: read
+
 jobs:
   check-version:
     # Runs before anything publishes: the tag, package.json and server.json must
@@ -13,7 +16,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - name: Tag matches package.json and server.json
@@ -42,8 +45,13 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-go@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # goreleaser needs the tags for the changelog; it publishes with GITHUB_TOKEN
+          # from env, so no token has to stay in .git for the later steps.
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: go.mod
       # .goreleaser.yaml skips signing when the secrets are absent, which is
@@ -64,15 +72,16 @@ jobs:
             fi
           done
           exit "$missing"
-      - uses: docker/setup-buildx-action@v4
-      - uses: docker/login-action@v4
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - uses: goreleaser/goreleaser-action@v7
+      - uses: goreleaser/goreleaser-action@a4f02ab5355a589de60d917a659ce617ed19b3de # v7.3.0
         with:
           distribution: goreleaser
-          version: latest
+          # A fixed release, so a new goreleaser cannot change what a tag builds.
+          version: v2.19.0
           args: release --clean
         env:
           GORELEASER_CURRENT_TAG: ${{ github.ref_name }}
@@ -91,8 +100,10 @@ jobs:
       contents: read
       id-token: write
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           # Trusted publishing needs npm 11.5.1+ and Node 22.14+; Node 24 ships both, so no ad-hoc npm install.
           node-version: '24'
@@ -100,6 +111,15 @@ jobs:
           check-latest: true
           registry-url: 'https://registry.npmjs.org'
       - run: npm version "${GITHUB_REF_NAME#v}" --no-git-tag-version --allow-same-version
+      # install.js verifies the binary against this copy of checksums.txt, which ships
+      # inside the npm tarball (with npm provenance), not against the mutable release.
+      - name: Bundle the release checksums into the package
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --pattern checksums.txt --dir .
+          grep -q "spinnaker-mcp_${GITHUB_REF_NAME#v}_linux_amd64.tar.gz" checksums.txt
+          npm pack --dry-run 2>&1 | grep -q checksums.txt
       - run: npm publish --loglevel verbose
 
   mcp-registry:
