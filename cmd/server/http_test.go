@@ -119,8 +119,8 @@ func TestHTTP_BodyCapped(t *testing.T) {
 	pad := strings.Repeat("x", maxRequestBody+1024)
 	big := `{"jsonrpc":"2.0","id":1,"method":"server/discover","params":{` + modernMeta + `,"pad":"` + pad + `"}}`
 	resp, body := postMCP(t, srv, big, modernHeaders)
-	if resp.StatusCode == 200 && strings.Contains(body, "supportedVersions") {
-		t.Errorf("a %d-byte body was accepted", len(big))
+	if resp.StatusCode != http.StatusBadRequest || !strings.Contains(body, "too large") {
+		t.Errorf("a %d-byte body = %d %.200s, want 400 request body too large", len(big), resp.StatusCode, body)
 	}
 	// Positive control: the same request just under the cap is served.
 	small := `{"jsonrpc":"2.0","id":1,"method":"server/discover","params":{` + modernMeta + `,"pad":"` + strings.Repeat("x", 1<<20) + `"}}`

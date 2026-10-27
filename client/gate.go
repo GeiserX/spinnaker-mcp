@@ -204,6 +204,8 @@ const maxErrMessage = 300
 // "message" (or "error") field of a JSON error body is kept: raw bodies can be proxy HTML
 // pages, stack traces or internal URLs, and they are the caller's data, not ours to echo.
 func statusError(code int, body []byte) error {
+	// The model gets only Gate's own message; the operator gets the body to debug with.
+	log.Printf("gate answered %d: %s", code, cleanMessage(string(body)))
 	var e struct {
 		Message string `json:"message"`
 		Error   string `json:"error"`

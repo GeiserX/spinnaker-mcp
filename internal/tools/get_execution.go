@@ -11,6 +11,18 @@ import (
 	"github.com/mark3labs/mcp-go/server"
 )
 
+const executionOutputSchema = `{
+  "type": "object",
+  "description": "By default the compact execution summary; with summary=false the full execution object from Gate, which has id, status and stages too.",
+  "properties": {
+    "id": {"type": "string"},
+    "status": {"type": "string"},
+    "stages": {"type": "array", "description": "Per stage summary, or Gate's full stage objects with summary=false."},
+    "running": {"type": "array", "description": "Stages running now (summary only)."},
+    "awaitingJudgment": {"type": "array", "description": "Manual judgment stages waiting for input (summary only)."}
+  }
+}`
+
 func NewGetExecution(gate *client.GateClient) (mcp.Tool, server.ToolHandlerFunc) {
 	tool := mcp.NewTool("get_execution",
 		mcp.WithDescription("Get one pipeline execution by ID. By default returns a compact summary: overall status, trigger, timing, and per stage its id, name, type, status, timing and first error, plus the stages running now and any manual judgment waiting for input. Use it to answer \"why did my deploy fail\" or \"is it waiting on me\". Pass summary=false for the full execution JSON with stage contexts and outputs, which is often hundreds of KB. Get the execution_id from trigger_pipeline, list_executions or search_executions."),
@@ -23,7 +35,7 @@ func NewGetExecution(gate *client.GateClient) (mcp.Tool, server.ToolHandlerFunc)
 			mcp.DefaultBool(true),
 		),
 		readOnly("Get execution"),
-		jsonOutput(),
+		mcp.WithRawOutputSchema(json.RawMessage(executionOutputSchema)),
 	)
 
 	handler := func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {

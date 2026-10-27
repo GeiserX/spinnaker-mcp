@@ -1,11 +1,14 @@
 package client
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"io"
+	"log"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 )
@@ -426,6 +429,10 @@ func TestGateClient_ErrorBodyNotEchoed(t *testing.T) {
 	}))
 	defer srv.Close()
 
+	var logs bytes.Buffer
+	log.SetOutput(&logs)
+	t.Cleanup(func() { log.SetOutput(os.Stderr) })
+
 	gate := newTestGate(t, srv.URL)
 	_, err := gate.ListApplications(context.Background())
 	if err == nil {
@@ -436,6 +443,10 @@ func TestGateClient_ErrorBodyNotEchoed(t *testing.T) {
 	}
 	if err.Error() != "gate error 500 (Internal Server Error)" {
 		t.Errorf("err = %q", err)
+	}
+	// The operator still gets the body, truncated, in the server log.
+	if !strings.Contains(logs.String(), "gate answered 500: <html>internal-gate.corp:8084") || !strings.Contains(logs.String(), "(truncated)") {
+		t.Errorf("server log = %q, want the truncated body", logs.String())
 	}
 }
 
