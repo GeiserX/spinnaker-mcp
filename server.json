@@ -1,10 +1,22 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.GeiserX/spinnaker-mcp",
+  "title": "Spinnaker",
   "description": "MCP server exposing Spinnaker CD platform via Gate API for pipeline and deployment management",
+  "websiteUrl": "https://geiserx.github.io/spinnaker-mcp/",
+  "icons": [
+    {
+      "src": "https://raw.githubusercontent.com/GeiserX/spinnaker-mcp/main/docs/images/icon.svg",
+      "mimeType": "image/svg+xml",
+      "sizes": [
+        "any"
+      ]
+    }
+  ],
   "repository": {
     "url": "https://github.com/GeiserX/spinnaker-mcp",
-    "source": "github"
+    "source": "github",
+    "id": "1218965451"
   },
   "version": "0.3.7",
   "packages": [
@@ -18,21 +30,21 @@
       "environmentVariables": [
         {
           "name": "GATE_URL",
-          "description": "Spinnaker Gate API URL (e.g. http://spin-gate:8084)",
+          "description": "Spinnaker Gate API URL (e.g. https://spin-gate.example.com)",
           "isRequired": true,
           "format": "string",
           "isSecret": false
         },
         {
           "name": "GATE_TOKEN",
-          "description": "Bearer token for Gate authentication",
+          "description": "Bearer token for Gate",
           "isRequired": false,
           "format": "string",
           "isSecret": true
         },
         {
           "name": "GATE_USER",
-          "description": "Basic auth username (alternative to token)",
+          "description": "Basic auth username (alternative to a token)",
           "isRequired": false,
           "format": "string",
           "isSecret": false
@@ -43,6 +55,50 @@
           "isRequired": false,
           "format": "string",
           "isSecret": true
+        },
+        {
+          "name": "GATE_COOKIE",
+          "description": "SESSION cookie of a Gate behind SSO (OAuth2, SAML); or run 'spinnaker-mcp login' once",
+          "isRequired": false,
+          "format": "string",
+          "isSecret": true
+        },
+        {
+          "name": "GATE_COOKIE_FILE",
+          "description": "File holding that SESSION cookie (default: the file 'spinnaker-mcp login' writes)",
+          "isRequired": false,
+          "format": "filepath",
+          "isSecret": false
+        },
+        {
+          "name": "GATE_CERT_FILE",
+          "description": "x509 client certificate (PEM); needs GATE_KEY_FILE",
+          "isRequired": false,
+          "format": "filepath",
+          "isSecret": false
+        },
+        {
+          "name": "GATE_KEY_FILE",
+          "description": "x509 client key (PEM); needs GATE_CERT_FILE",
+          "isRequired": false,
+          "format": "filepath",
+          "isSecret": false
+        },
+        {
+          "name": "GATE_INSECURE",
+          "description": "Skip TLS certificate verification of Gate (testing only)",
+          "isRequired": false,
+          "format": "boolean",
+          "isSecret": false,
+          "default": "false"
+        },
+        {
+          "name": "TOOLSETS",
+          "description": "Tool groups to register. Default readonly; 'all' also registers the tools that trigger, cancel, edit, delete and judge pipelines",
+          "isRequired": false,
+          "format": "string",
+          "isSecret": false,
+          "default": "readonly"
         }
       ]
     },
@@ -55,21 +111,21 @@
       "environmentVariables": [
         {
           "name": "GATE_URL",
-          "description": "Spinnaker Gate API URL (e.g. http://spin-gate:8084)",
+          "description": "Spinnaker Gate API URL (e.g. https://spin-gate.example.com)",
           "isRequired": true,
           "format": "string",
           "isSecret": false
         },
         {
           "name": "GATE_TOKEN",
-          "description": "Bearer token for Gate authentication",
+          "description": "Bearer token for Gate",
           "isRequired": false,
           "format": "string",
           "isSecret": true
         },
         {
           "name": "GATE_USER",
-          "description": "Basic auth username (alternative to token)",
+          "description": "Basic auth username (alternative to a token)",
           "isRequired": false,
           "format": "string",
           "isSecret": false
@@ -80,6 +136,50 @@
           "isRequired": false,
           "format": "string",
           "isSecret": true
+        },
+        {
+          "name": "GATE_COOKIE",
+          "description": "SESSION cookie of a Gate behind SSO (OAuth2, SAML); or run 'spinnaker-mcp login' once",
+          "isRequired": false,
+          "format": "string",
+          "isSecret": true
+        },
+        {
+          "name": "GATE_COOKIE_FILE",
+          "description": "File holding that SESSION cookie (default: the file 'spinnaker-mcp login' writes)",
+          "isRequired": false,
+          "format": "filepath",
+          "isSecret": false
+        },
+        {
+          "name": "GATE_CERT_FILE",
+          "description": "x509 client certificate (PEM); needs GATE_KEY_FILE",
+          "isRequired": false,
+          "format": "filepath",
+          "isSecret": false
+        },
+        {
+          "name": "GATE_KEY_FILE",
+          "description": "x509 client key (PEM); needs GATE_CERT_FILE",
+          "isRequired": false,
+          "format": "filepath",
+          "isSecret": false
+        },
+        {
+          "name": "GATE_INSECURE",
+          "description": "Skip TLS certificate verification of Gate (testing only)",
+          "isRequired": false,
+          "format": "boolean",
+          "isSecret": false,
+          "default": "false"
+        },
+        {
+          "name": "TOOLSETS",
+          "description": "Tool groups to register. Default readonly; 'all' also registers the tools that trigger, cancel, edit, delete and judge pipelines",
+          "isRequired": false,
+          "format": "string",
+          "isSecret": false,
+          "default": "readonly"
         }
       ]
     }
