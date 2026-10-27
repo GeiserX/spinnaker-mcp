@@ -121,7 +121,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release download "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --pattern checksums.txt --dir .
-          grep -q "spinnaker-mcp_${GITHUB_REF_NAME#v}_linux_amd64.tar.gz" checksums.txt
+          grep -Eq "^[0-9a-f]{64}[[:space:]]+spinnaker-mcp_${GITHUB_REF_NAME#v}_linux_amd64\.tar\.gz$" checksums.txt
           npm pack --dry-run 2>&1 | grep -q checksums.txt
       - run: npm publish --loglevel verbose
 
