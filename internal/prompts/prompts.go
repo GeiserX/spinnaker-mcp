@@ -105,7 +105,7 @@ Steps:
    - Upstream/downstream stage dependencies
 3. Use list_server_groups for application "%s" to check current infrastructure health
 4. If instances are unhealthy, use get_instance and get_console_output to get details
-5. Use get_scaling_activities if relevant to check for scaling failures
+5. If a deploy or resize stage failed, use get_scaling_activities with that stage's server group name (server_group_name), account and cluster to check for scaling failures
 6. Provide a diagnosis:
    - Root cause analysis
    - Affected infrastructure
@@ -186,9 +186,11 @@ func infraOverview() (mcp.Prompt, server.PromptHandlerFunc) {
 		app := req.Params.Arguments["application"]
 		account := req.Params.Arguments["account"]
 
-		accountFilter := ""
+		accountFilter, keepOnly := "", ""
 		if account != "" {
 			accountFilter = fmt.Sprintf(" in account \"%s\"", account)
+			// The list tools return every account; the filter is applied to their output.
+			keepOnly = fmt.Sprintf("\n   Keep only server groups, clusters and load balancers whose account is \"%s\".", account)
 		}
 
 		return &mcp.GetPromptResult{
@@ -203,7 +205,7 @@ func infraOverview() (mcp.Prompt, server.PromptHandlerFunc) {
 Steps:
 1. Use list_server_groups for application "%s" to get all deployment targets
 2. Use list_clusters for application "%s" to see cluster organization
-3. Use list_load_balancers for application "%s" to see traffic routing
+3. Use list_load_balancers for application "%s" to see traffic routing%s
 4. Summarize:
    - Server groups by cluster: name, region, instance count, health status, image/build
    - Load balancers: name, type, target groups, health check configuration
@@ -213,7 +215,7 @@ Steps:
 5. Flag any concerns:
    - Server groups with zero healthy instances
    - Clusters with only one server group (no rollback target)
-   - Mismatched instance counts between regions (asymmetric deployment)`, app, accountFilter, app, app, app),
+   - Mismatched instance counts between regions (asymmetric deployment)`, app, accountFilter, app, app, app, keepOnly),
 					},
 				},
 			},
@@ -263,7 +265,7 @@ Steps:
 1. Use get_cluster (application "%s", account "%s", cluster "%s") to see all server groups
 2. Use get_target_server_group with target "current" (cloud_provider from cluster, scope "%s") to identify the active deployment
 3. Use get_target_server_group with target "ancestor" to identify the rollback target
-4. Use get_scaling_activities (application "%s", account "%s", cluster "%s") to understand recent changes
+4. Use get_scaling_activities (application "%s", account "%s", cluster "%s", server_group_name = the current server group from step 2) to understand recent changes
 5. Build the rollback plan:
    - Current server group: name, image, instance count, health
    - Rollback target: name, image, instance count, when it was last active

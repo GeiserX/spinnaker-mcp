@@ -11,7 +11,8 @@ import (
 func NewListFirewalls(gate *client.GateClient) (mcp.Tool, server.ToolHandlerFunc) {
 	tool := mcp.NewTool("list_firewalls",
 		mcp.WithDescription("List all firewall rules (security groups) across all Spinnaker accounts and regions. Use this to audit network security posture or find a specific security group before inspecting it with get_firewall. Returns JSON array of firewall objects grouped by account and region."),
-		readOnly(),
+		readOnly("List firewalls"),
+		jsonOutput(),
 	)
 
 	handler := func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
@@ -19,7 +20,7 @@ func NewListFirewalls(gate *client.GateClient) (mcp.Tool, server.ToolHandlerFunc
 		if err != nil {
 			return mcp.NewToolResultError(err.Error()), nil
 		}
-		return mcp.NewToolResultText(string(resp)), nil
+		return jsonResult(string(resp), resp), nil
 	}
 
 	return tool, handler

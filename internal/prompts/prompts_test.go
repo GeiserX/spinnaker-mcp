@@ -2,9 +2,13 @@ package prompts
 
 import (
 	"context"
+	"regexp"
+	"slices"
 	"strings"
 	"testing"
 
+	"github.com/geiserx/spinnaker-mcp/client"
+	"github.com/geiserx/spinnaker-mcp/internal/toolsets"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 )
@@ -186,11 +190,11 @@ func TestRegister_DoesNotPanic(t *testing.T) {
 
 func TestAllPromptNames(t *testing.T) {
 	expected := map[string]bool{
-		"deploy-review":    false,
+		"deploy-review":     false,
 		"incident-response": false,
-		"pipeline-audit":   false,
-		"infra-overview":   false,
-		"rollback-plan":    false,
+		"pipeline-audit":    false,
+		"infra-overview":    false,
+		"rollback-plan":     false,
 	}
 
 	prompts := []func() (mcp.Prompt, server.PromptHandlerFunc){
@@ -208,6 +212,56 @@ func TestAllPromptNames(t *testing.T) {
 	for name, found := range expected {
 		if !found {
 			t.Errorf("missing prompt: %s", name)
+		}
+	}
+}
+
+// Every tool a prompt tells the model to call must exist, with arguments it accepts:
+// rollback-plan once asked for target "current", which the tool rejected, and two
+// prompts called get_scaling_activities without its required server_group_name.
+func TestPrompts_ReferenceRealTools(t *testing.T) {
+	gate, err := client.NewGate(client.GateOptions{BaseURL: "http://localhost:8084"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	registered := map[string]mcp.Tool{}
+	for _, entries := range toolsets.BuildTools(gate) {
+		for _, e := range entries {
+			registered[e.Tool.Name] = e.Tool
+		}
+	}
+	args := map[string]string{
+		"application": "app", "pipeline": "Deploy", "execution_id": "01JEXEC",
+		"account": "prod", "cluster": "app-main", "region": "us-east-1",
+	}
+	toolRef := regexp.MustCompile(`\b(?:list|get|trigger|search|cancel|pause|resume|restart|evaluate|save|update|delete|find|judge)_[a-z_]+\b`)
+	targetRef := regexp.MustCompile(`target "([a-z]+)"`)
+
+	for _, mk := range []func() (mcp.Prompt, server.PromptHandlerFunc){deployReview, incidentResponse, pipelineAudit, infraOverview, rollbackPlan} {
+		p, h := mk()
+		res, err := h(context.Background(), mcp.GetPromptRequest{Params: mcp.GetPromptParams{Name: p.Name, Arguments: args}})
+		if err != nil {
+			t.Fatalf("%s: %v", p.Name, err)
+		}
+		var text string
+		for _, m := range res.Messages {
+			if tc, ok := m.Content.(mcp.TextContent); ok {
+				text += tc.Text
+			}
+		}
+		for _, name := range toolRef.FindAllString(text, -1) {
+			if _, ok := registered[name]; !ok {
+				t.Errorf("%s mentions %s, which is not a tool", p.Name, name)
+			}
+		}
+		for _, m := range targetRef.FindAllStringSubmatch(text, -1) {
+			enum, _ := registered["get_target_server_group"].InputSchema.Properties["target"].(map[string]any)["enum"].([]string)
+			if !slices.Contains(enum, m[1]) {
+				t.Errorf("%s asks for target %q; the tool accepts %v", p.Name, m[1], enum)
+			}
+		}
+		if strings.Contains(text, "get_scaling_activities") && !strings.Contains(text, "server_group_name") {
+			t.Errorf("%s calls get_scaling_activities without server_group_name", p.Name)
 		}
 	}
 }

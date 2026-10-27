@@ -20,7 +20,12 @@ func NewGetImageTags(gate *client.GateClient) (mcp.Tool, server.ToolHandlerFunc)
 			mcp.Required(),
 			mcp.Description("Docker image repository (e.g. library/nginx)"),
 		),
-		readOnly(),
+		mcp.WithString("provider",
+			mcp.Description("Image provider of the account (default dockerRegistry; Gate itself would assume aws)"),
+			mcp.DefaultString("dockerRegistry"),
+		),
+		readOnly("List image tags"),
+		jsonOutput(),
 	)
 
 	handler := func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
@@ -33,11 +38,12 @@ func NewGetImageTags(gate *client.GateClient) (mcp.Tool, server.ToolHandlerFunc)
 			return mcp.NewToolResultError(err.Error()), nil
 		}
 
-		resp, err := gate.GetImageTags(ctx, account, repository)
+		provider := req.GetString("provider", "dockerRegistry")
+		resp, err := gate.GetImageTags(ctx, account, repository, provider)
 		if err != nil {
 			return mcp.NewToolResultError(err.Error()), nil
 		}
-		return mcp.NewToolResultText(fmt.Sprintf("Tags for %q (account %q):\n%s", repository, account, string(resp))), nil
+		return jsonResult(fmt.Sprintf("Tags for %q (account %q):\n%s", repository, account, string(resp)), resp), nil
 	}
 
 	return tool, handler

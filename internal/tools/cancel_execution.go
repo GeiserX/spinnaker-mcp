@@ -17,9 +17,13 @@ func NewCancelExecution(gate *client.GateClient) (mcp.Tool, server.ToolHandlerFu
 			mcp.Description("Pipeline execution ID to cancel"),
 		),
 		mcp.WithString("reason",
-			mcp.Description("Human-readable reason for cancellation"),
+			mcp.Description("Human-readable reason for cancellation, shown in the Spinnaker UI"),
 		),
-		mutating(),
+		mcp.WithBoolean("force",
+			mcp.Description("Cancel even if a stage is not cancellable (default false). Use only when a normal cancel left the execution running."),
+			mcp.DefaultBool(false),
+		),
+		destructive("Cancel execution", true),
 	)
 
 	handler := func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
@@ -30,7 +34,7 @@ func NewCancelExecution(gate *client.GateClient) (mcp.Tool, server.ToolHandlerFu
 
 		reason := req.GetString("reason", "")
 
-		resp, err := gate.CancelExecution(ctx, id, reason)
+		resp, err := gate.CancelExecution(ctx, id, reason, req.GetBool("force", false))
 		if err != nil {
 			return mcp.NewToolResultError(err.Error()), nil
 		}

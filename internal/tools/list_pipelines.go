@@ -16,7 +16,8 @@ func NewListPipelines(gate *client.GateClient) (mcp.Tool, server.ToolHandlerFunc
 			mcp.Required(),
 			mcp.Description("Application name as registered in Spinnaker"),
 		),
-		readOnly(),
+		readOnly("List pipeline configs"),
+		jsonOutput(),
 	)
 
 	handler := func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
@@ -29,7 +30,7 @@ func NewListPipelines(gate *client.GateClient) (mcp.Tool, server.ToolHandlerFunc
 		if err != nil {
 			return mcp.NewToolResultError(err.Error()), nil
 		}
-		return mcp.NewToolResultText(fmt.Sprintf("Pipelines for %q:\n%s", app, string(resp))), nil
+		return jsonResult(fmt.Sprintf("Pipelines for %q:\n%s", app, string(resp)), resp), nil
 	}
 
 	return tool, handler

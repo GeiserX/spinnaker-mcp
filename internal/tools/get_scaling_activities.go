@@ -31,7 +31,8 @@ func NewGetScalingActivities(gate *client.GateClient) (mcp.Tool, server.ToolHand
 		mcp.WithString("provider",
 			mcp.Description("Cloud provider (e.g. aws, gce, kubernetes)"),
 		),
-		readOnly(),
+		readOnly("Server group scaling activities"),
+		jsonOutput(),
 	)
 
 	handler := func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
@@ -57,7 +58,7 @@ func NewGetScalingActivities(gate *client.GateClient) (mcp.Tool, server.ToolHand
 		if err != nil {
 			return mcp.NewToolResultError(err.Error()), nil
 		}
-		return mcp.NewToolResultText(fmt.Sprintf("Scaling activities for server group %q in cluster %q:\n%s", serverGroup, cluster, string(resp))), nil
+		return jsonResult(fmt.Sprintf("Scaling activities for server group %q in cluster %q:\n%s", serverGroup, cluster, string(resp)), resp), nil
 	}
 
 	return tool, handler

@@ -16,7 +16,8 @@ func NewGetApplication(gate *client.GateClient) (mcp.Tool, server.ToolHandlerFun
 			mcp.Required(),
 			mcp.Description("Application name as registered in Spinnaker"),
 		),
-		readOnly(),
+		readOnly("Get application"),
+		jsonOutput(),
 	)
 
 	handler := func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
@@ -29,7 +30,7 @@ func NewGetApplication(gate *client.GateClient) (mcp.Tool, server.ToolHandlerFun
 		if err != nil {
 			return mcp.NewToolResultError(err.Error()), nil
 		}
-		return mcp.NewToolResultText(fmt.Sprintf("Application %q:\n%s", app, string(resp))), nil
+		return jsonResult(fmt.Sprintf("Application %q:\n%s", app, string(resp)), resp), nil
 	}
 
 	return tool, handler

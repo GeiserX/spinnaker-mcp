@@ -225,10 +225,15 @@ func handleGetAccount(gate *client.GateClient) server.ResourceTemplateHandlerFun
 	}
 }
 
+// textResource wraps a Gate body. An empty body becomes "[]" for list resources and
+// "{}" for single-object ones, so the text is always valid JSON of the right shape.
 func textResource(uri string, data []byte) mcp.TextResourceContents {
 	text := string(data)
 	if text == "" {
 		text = "[]"
+		if p := strings.TrimPrefix(uri, "spinnaker://"); strings.Count(p, "/") == 1 { // application/{name}, execution/{id}, account/{name}
+			text = "{}"
+		}
 	}
 	return mcp.TextResourceContents{
 		URI:      uri,

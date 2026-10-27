@@ -20,7 +20,7 @@ func NewDeleteStrategy(gate *client.GateClient) (mcp.Tool, server.ToolHandlerFun
 			mcp.Required(),
 			mcp.Description("Strategy name to delete"),
 		),
-		destructive(),
+		destructive("Delete deployment strategy", true),
 	)
 
 	handler := func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {

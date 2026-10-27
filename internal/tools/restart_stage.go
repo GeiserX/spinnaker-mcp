@@ -20,7 +20,7 @@ func NewRestartStage(gate *client.GateClient) (mcp.Tool, server.ToolHandlerFunc)
 			mcp.Required(),
 			mcp.Description("Stage ID to restart"),
 		),
-		mutating(),
+		destructive("Restart stage", false),
 	)
 
 	handler := func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {

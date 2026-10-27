@@ -33,6 +33,20 @@ func TestTextResource_NilDefaultsToArray(t *testing.T) {
 	}
 }
 
+func TestTextResource_EmptyObjectResource(t *testing.T) {
+	for uri, want := range map[string]string{
+		"spinnaker://execution/01J":            "{}",
+		"spinnaker://application/app":          "{}",
+		"spinnaker://account/prod":             "{}",
+		"spinnaker://application/app/clusters": "[]",
+		"spinnaker://applications":             "[]",
+	} {
+		if got := textResource(uri, nil).Text; got != want {
+			t.Errorf("%s: %q, want %q", uri, got, want)
+		}
+	}
+}
+
 func TestExtractParam_FromArguments(t *testing.T) {
 	req := mcp.ReadResourceRequest{}
 	req.Params.URI = "spinnaker://application/myapp"

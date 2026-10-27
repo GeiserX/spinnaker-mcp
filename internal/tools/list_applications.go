@@ -12,7 +12,8 @@ import (
 func NewListApplications(gate *client.GateClient) (mcp.Tool, server.ToolHandlerFunc) {
 	tool := mcp.NewTool("list_applications",
 		mcp.WithDescription("List all Spinnaker applications with their metadata. Use this as a starting point to discover available applications before querying pipelines or infrastructure. Returns JSON array of application objects with name, email, accounts, and cloud providers."),
-		readOnly(),
+		readOnly("List applications"),
+		jsonOutput(),
 	)
 
 	handler := func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
@@ -20,7 +21,7 @@ func NewListApplications(gate *client.GateClient) (mcp.Tool, server.ToolHandlerF
 		if err != nil {
 			return mcp.NewToolResultError(err.Error()), nil
 		}
-		return mcp.NewToolResultText(fmt.Sprintf("Applications:\n%s", string(resp))), nil
+		return jsonResult(fmt.Sprintf("Applications:\n%s", string(resp)), resp), nil
 	}
 
 	return tool, handler

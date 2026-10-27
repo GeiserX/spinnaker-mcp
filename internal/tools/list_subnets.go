@@ -16,7 +16,8 @@ func NewListSubnets(gate *client.GateClient) (mcp.Tool, server.ToolHandlerFunc) 
 			mcp.Required(),
 			mcp.Description("Cloud provider (e.g. aws, gce, kubernetes)"),
 		),
-		readOnly(),
+		readOnly("List subnets"),
+		jsonOutput(),
 	)
 
 	handler := func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
@@ -29,7 +30,7 @@ func NewListSubnets(gate *client.GateClient) (mcp.Tool, server.ToolHandlerFunc) 
 		if err != nil {
 			return mcp.NewToolResultError(err.Error()), nil
 		}
-		return mcp.NewToolResultText(fmt.Sprintf("Subnets for %q:\n%s", cloudProvider, string(resp))), nil
+		return jsonResult(fmt.Sprintf("Subnets for %q:\n%s", cloudProvider, string(resp)), resp), nil
 	}
 
 	return tool, handler

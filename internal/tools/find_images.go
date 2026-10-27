@@ -3,6 +3,7 @@ package tools
 import (
 	"context"
 	"fmt"
+	"strconv"
 
 	"github.com/geiserx/spinnaker-mcp/client"
 	"github.com/mark3labs/mcp-go/mcp"
@@ -25,7 +26,12 @@ func NewFindImages(gate *client.GateClient) (mcp.Tool, server.ToolHandlerFunc) {
 		mcp.WithString("account",
 			mcp.Description("Spinnaker account to filter images"),
 		),
-		readOnly(),
+		mcp.WithInteger("count",
+			mcp.Description("Maximum number of images to return (default: all Gate finds)"),
+			mcp.Min(1), mcp.Max(1000),
+		),
+		readOnly("Find images"),
+		jsonOutput(),
 	)
 
 	handler := func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
@@ -45,11 +51,14 @@ func NewFindImages(gate *client.GateClient) (mcp.Tool, server.ToolHandlerFunc) {
 			params["account"] = account
 		}
 
+		if count := req.GetInt("count", 0); count > 0 {
+			params["count"] = strconv.Itoa(clamp(count, 1, 1000))
+		}
 		resp, err := gate.FindImages(ctx, params)
 		if err != nil {
 			return mcp.NewToolResultError(err.Error()), nil
 		}
-		return mcp.NewToolResultText(fmt.Sprintf("Images for provider %q:\n%s", provider, string(resp))), nil
+		return jsonResult(fmt.Sprintf("Images for provider %q:\n%s", provider, string(resp)), resp), nil
 	}
 
 	return tool, handler

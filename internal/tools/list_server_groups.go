@@ -16,7 +16,8 @@ func NewListServerGroups(gate *client.GateClient) (mcp.Tool, server.ToolHandlerF
 			mcp.Required(),
 			mcp.Description("Application name as registered in Spinnaker"),
 		),
-		readOnly(),
+		readOnly("List server groups"),
+		jsonOutput(),
 	)
 
 	handler := func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
@@ -29,7 +30,7 @@ func NewListServerGroups(gate *client.GateClient) (mcp.Tool, server.ToolHandlerF
 		if err != nil {
 			return mcp.NewToolResultError(err.Error()), nil
 		}
-		return mcp.NewToolResultText(fmt.Sprintf("Server groups for %q:\n%s", app, string(resp))), nil
+		return jsonResult(fmt.Sprintf("Server groups for %q:\n%s", app, string(resp)), resp), nil
 	}
 
 	return tool, handler
