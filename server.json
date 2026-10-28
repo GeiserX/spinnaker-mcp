@@ -18,12 +18,12 @@
     "source": "github",
     "id": "1218965451"
   },
-  "version": "0.3.7",
+  "version": "0.4.0",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "spinnaker-mcp",
-      "version": "0.3.7",
+      "version": "0.4.0",
       "transport": {
         "type": "stdio"
       },
@@ -104,7 +104,7 @@
     },
     {
       "registryType": "oci",
-      "identifier": "drumsergio/spinnaker-mcp:v0.3.7",
+      "identifier": "drumsergio/spinnaker-mcp:v0.4.0",
       "transport": {
         "type": "stdio"
       },

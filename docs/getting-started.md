@@ -20,10 +20,10 @@ The first run downloads the pre-built Go binary for your platform from the GitHu
 ## Docker
 
 ```sh
-docker run -i --rm -e GATE_URL=http://spin-gate:8084 -e TRANSPORT=stdio drumsergio/spinnaker-mcp:v0.3.7
+docker run -i --rm -e GATE_URL=http://spin-gate:8084 -e TRANSPORT=stdio drumsergio/spinnaker-mcp:v0.4.0
 ```
 
-Image tags carry the `v` prefix (`v0.3.7`). `-i` keeps stdin open, which the stdio transport needs.
+Image tags carry the `v` prefix (`v0.4.0`). `-i` keeps stdin open, which the stdio transport needs.
 
 ## Local build
 
@@ -54,7 +54,7 @@ it, `gate.auth.type` (`token` or `basic`) with `gate.auth.token` or `gate.auth.u
 makes the chart create one. For an x509 client certificate, `gate.tls.certSecret` names a Secret with
 `tls.crt` and `tls.key`. The pod runs the [HTTP transport](configuration.md#http-transport) on port 8085
 behind a `ClusterIP` Service, with liveness on `/healthz` and readiness on `/readyz`, and the image tag
-defaults to `v` plus the chart's `appVersion` (`v0.3.7`). It listens on `0.0.0.0` inside the pod, so the chart
+defaults to `v` plus the chart's `appVersion` (`v0.4.0`). It listens on `0.0.0.0` inside the pod, so the chart
 refuses to render without `mcpAuth.existingSecret` (a Secret with an `MCP_AUTH_TOKEN` key) or
 `mcpAuth.token`: every `/mcp` request must carry that token as a bearer token. The chart registers only the
 read tools; set `toolsets=all` only if the clients must change things, and still limit who reaches the Service.
