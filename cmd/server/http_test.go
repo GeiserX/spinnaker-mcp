@@ -119,8 +119,12 @@ func TestHTTP_BodyCapped(t *testing.T) {
 	pad := strings.Repeat("x", maxRequestBody+1024)
 	big := `{"jsonrpc":"2.0","id":1,"method":"server/discover","params":{` + modernMeta + `,"pad":"` + pad + `"}}`
 	resp, body := postMCP(t, srv, big, modernHeaders)
-	if resp.StatusCode != http.StatusBadRequest || !strings.Contains(body, "too large") {
-		t.Errorf("a %d-byte body = %d %.200s, want 400 request body too large", len(big), resp.StatusCode, body)
+	// Our MaxBytesHandler answers 400 "too large"; mcp-go (since 1.5.0) caps the body at the same
+	// size and may refuse it first with 413 "exceeds". Either way the request is never served.
+	refused := (resp.StatusCode == http.StatusBadRequest && strings.Contains(body, "too large")) ||
+		(resp.StatusCode == http.StatusRequestEntityTooLarge && strings.Contains(body, "exceeds"))
+	if !refused {
+		t.Errorf("a %d-byte body = %d %.200s, want 400 too large or 413 exceeds", len(big), resp.StatusCode, body)
 	}
 	// Positive control: the same request just under the cap is served.
 	small := `{"jsonrpc":"2.0","id":1,"method":"server/discover","params":{` + modernMeta + `,"pad":"` + strings.Repeat("x", 1<<20) + `"}}`
