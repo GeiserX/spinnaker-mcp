@@ -3,7 +3,7 @@
  * banner.svg paints a ship's hull in #0f2742 on a #bcd8ec sky, the name in
  * #f3ead8, the tagline in #b5cde3, a #e9c46a gold line and hull number, a
  * #c8372d boot stripe and a #1b5a8a sea. The header and the dark page use the
- * hull; links and the accent use the gold. mkdocs.yml sets primary and accent
+ * hull; links and the accent use the gold. zensical.toml sets primary and accent
  * to custom, so nothing is painted until these variables exist.
  */
 :root {
@@ -44,10 +44,16 @@
    banner's cream. Only the first topic is styled; Material puts the page
    title in a second .md-header__topic and swaps them on scroll. */
 .md-header__topic:first-child .md-ellipsis {
-  color: #f3ead8;
   font-family: Georgia, "Times New Roman", serif;
   font-weight: 700;
   letter-spacing: -0.01em;
+}
+
+/* That colour only on the dark scheme: Zensical's modern header takes the page
+   background, so on the light scheme it is white and a light name would vanish.
+   There the name keeps the default text colour. */
+[data-md-color-scheme="slate"] .md-header__topic:first-child .md-ellipsis {
+  color: #f3ead8;
 }
 
 /* Keep the mark and the name close, so they read as one unit. */
