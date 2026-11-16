@@ -1,9 +1,9 @@
 # ───────────────────────────────────────────────
 # Stage 1 – build the Go binary
 # ───────────────────────────────────────────────
-# Pinned by digest; dependabot's docker ecosystem proposes updates. 1.27.3 matches
+# Pinned by digest; dependabot's docker ecosystem proposes updates. 1.27.4 matches
 # the go.mod toolchain, which rejects the compromised eMudhra intermediates.
-FROM golang:1.27.3@sha256:e519d3b0a5b285e5aa53ab9eef02bc6bbb9cb04608389b743a136a9ce75f0d1e AS builder
+FROM golang:1.27.4@sha256:fe517acaa580cc7915457080f850c37e618b3c1e750f98b58fc6429b605147a1 AS builder
 LABEL maintainer="9169332+GeiserX@users.noreply.github.com"
 
 WORKDIR /src
