@@ -3,7 +3,7 @@
 # ───────────────────────────────────────────────
 # Pinned by digest; dependabot's docker ecosystem proposes updates. 1.27.4 matches
 # the go.mod toolchain, which rejects the compromised eMudhra intermediates.
-FROM golang:1.27.4@sha256:fe517acaa580cc7915457080f850c37e618b3c1e750f98b58fc6429b605147a1 AS builder
+FROM golang:1.27.4@sha256:205c7636d74e0ffbe3d007162df7d74f859f5a8c8322dfb9f907977686c126cf AS builder
 LABEL maintainer="9169332+GeiserX@users.noreply.github.com"
 
 WORKDIR /src
